@@ -18,8 +18,7 @@ class _MySplashState extends State<MySplash> {
         'Organiza Fila!',
         style: new TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
       ),
-      image: new Image.network(
-          'https://miro.medium.com/max/100/1*fTVH1wCAgB457DtD4IbSAw.png'),
+      image: Image.asset("logo.png"),
       gradientBackground: LinearGradient(
         begin: Alignment.topRight,
         end: Alignment.bottomLeft,
@@ -29,7 +28,7 @@ class _MySplashState extends State<MySplash> {
       photoSize: 100.0,
       onClick: () => print("Clicou no splash!"),
       loaderColor: Colors.deepOrange,
-      loadingText: new Text("SOLETRE em voz alta: Arnold Schwarzenegger"),
+      loadingText: new Text("SOLETRE em voz alta: Schwarzenegger, Arnold"),
     );
   }
 }
