@@ -1,8 +1,13 @@
-# organiza_fila_admin
+# Organiza Fila, ADM!
 
 App Admin do Oganiza Fila!
 
-## Getting Started
+Este projeto foi desenvolvido como parte da disciplina de Tecnologias para Desenvolvimento Cross 
+Platform: React Native e Flutter, parte da Espec. em Desenvolvimento de Software: ênfase em Web e 
+Mobile - 6ª Ed.
+
+
+## FLUTTER - Getting Started
 
 This project is a starting point for a Flutter application.
 

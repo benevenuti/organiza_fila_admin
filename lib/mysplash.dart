@@ -13,7 +13,8 @@ class _MySplashState extends State<MySplash> {
   Widget build(BuildContext context) {
     return new SplashScreen(
       seconds: 5,
-      navigateAfterSeconds: new EstabelecimentoListing(),
+      navigateAfterSeconds:
+          new EstabelecimentoList("Listagem de Estabelecimentos"),
       title: new Text(
         'Organiza Fila!',
         style: new TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
