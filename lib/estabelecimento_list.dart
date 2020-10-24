@@ -146,7 +146,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           : HorizontalListItem(items[index]),
       actions: <Widget>[
         IconSlideAction(
-          caption: 'Archive',
+          caption: 'Arquivar',
           color: Colors.blue,
           icon: Icons.archive,
           onTap: () => _showSnackBar(context, 'Arquivar'),
@@ -200,7 +200,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                   builder: (context) {
                     return AlertDialog(
                       title: Text('Deletar'),
-                      content: Text('Estabelecimento será deletado'),
+                      content: Text('Estabelecimento será deletado. Confirma?'),
                       actions: <Widget>[
                         FlatButton(
                           child: Text('Cancelar'),
@@ -220,7 +220,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
               context,
               actionType == SlideActionType.primary
                   ? 'Dispensar arquivar'
-                  : 'Dispensar delete');
+                  : 'Dispensar deletar');
           setState(() {
             items.removeAt(index);
           });
@@ -250,10 +250,11 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                     builder: (context) {
                       return AlertDialog(
                         title: Text('Deletar'),
-                        content: Text('Estabelecimento será deletado'),
+                        content: Text(
+                            'Estabelecimento será deletado. Confirma?'),
                         actions: <Widget>[
                           FlatButton(
-                            child: Text('Cancel'),
+                            child: Text('Cancelar'),
                             onPressed: () => Navigator.of(context).pop(false),
                           ),
                           FlatButton(
@@ -286,7 +287,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           builder: (context, index, animation, renderingMode) {
             if (index == 0) {
               return IconSlideAction(
-                caption: 'More',
+                caption: 'Mais',
                 color: renderingMode == SlidableRenderingMode.slide
                     ? Colors.grey.shade200.withOpacity(animation.value)
                     : Colors.grey.shade200,
@@ -296,7 +297,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
               );
             } else {
               return IconSlideAction(
-                caption: 'Delete',
+                caption: 'Deletar',
                 color: renderingMode == SlidableRenderingMode.slide
                     ? Colors.red.withOpacity(animation.value)
                     : Colors.red,
