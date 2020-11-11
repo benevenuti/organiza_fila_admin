@@ -1,30 +1,35 @@
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
+import 'package:organiza_fila_admin/estabelecimento_crud.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class EstabelecimentoList extends StatefulWidget {
-  EstabelecimentoList(this.title) : super();
+  EstabelecimentoList() : super();
 
-  final String title;
+  final String title = "Meus Estabelecimentos";
 
   @override
   _EstabelecimentoListState createState() => _EstabelecimentoListState();
 }
 
 class _EstabelecimentoListState extends State<EstabelecimentoList> {
-  SlidableController slidableController;
-  List<Estabelecimento> items;
+  ContainerTransitionType _transitionType = ContainerTransitionType.fade;
+
+  List<Estabelecimento> items = List.empty();
   String s = "Aguarde...";
 
   Future<String> _loadFromAsset() async {
-    String s = await rootBundle.loadString("lib/assets/fortune500_2020.json");
+    String s = await rootBundle.loadString("lib/assets/estabelecimentos.json");
     return s;
   }
 
-  void loadEstabelecimentos(String json) {
+  void _loadEstabelecimentos(String json) {
     var jsonAsList = jsonDecode(json) as List;
 
     setState(() {
@@ -35,230 +40,121 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
 
   @override
   void initState() {
-    slidableController = SlidableController(
-      onSlideAnimationChanged: handleSlideAnimationChanged,
-      onSlideIsOpenChanged: handleSlideIsOpenChanged,
-    );
-
+    // carrega os dados do json
     _loadFromAsset()
-        .then((value) => loadEstabelecimentos(value))
+        .then((json) => _loadEstabelecimentos(json))
         .catchError((error) => print(error));
 
     super.initState();
   }
 
-  Animation<double> _rotationAnimation;
-  Color _fabColor = Colors.blue;
-
-  void handleSlideAnimationChanged(Animation<double> slideAnimation) {
-    setState(() {
-      _rotationAnimation = slideAnimation;
-    });
-  }
-
-  void handleSlideIsOpenChanged(bool isOpen) {
-    setState(() {
-      _fabColor = isOpen ? Colors.green : Colors.blue;
-    });
-  }
-
-  //@override
-  Widget __build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: Center(
-          child: Text(this.s),
-        ));
-  }
-
   @override
   Widget build(BuildContext context) {
+    log('list build');
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        //backgroundColor: Colors.grey[850],
+        centerTitle: true,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Image.asset(
+              'logo.png',
+              width: 64,
+              fit: BoxFit.fitWidth,
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Text(widget.title),
+          ],
+        ),
       ),
       body: Center(
-        child: OrientationBuilder(
-          builder: (context, orientation) => _buildList(
-              context,
-              orientation == Orientation.portrait
-                  ? Axis.vertical
-                  : Axis.horizontal),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: _fabColor,
-        onPressed: null,
-        child: _rotationAnimation == null
-            ? Icon(Icons.add)
-            : RotationTransition(
-                turns: _rotationAnimation,
-                child: Icon(Icons.add),
-              ),
-      ),
+          child: ListView.builder(
+        itemBuilder: (context, index) {
+          return _buildSlidable(context, index);
+        },
+        itemCount: items.length,
+      )),
+      //backgroundColor: Colors.grey[600],
+      floatingActionButton: _buildFabOpenContainer(),
     );
   }
 
-  Widget _buildList(BuildContext context, Axis direction) {
-    return ListView.builder(
-      scrollDirection: direction,
-      itemBuilder: (context, index) {
-        final Axis slidableDirection =
-            direction == Axis.horizontal ? Axis.vertical : Axis.horizontal;
-        var item = items[index];
-        if (item.id < 8) {
-          return _getSlidableWithLists(context, index, slidableDirection);
-        } else {
-          return _getSlidableWithDelegates(context, index, slidableDirection);
-        }
+  OpenContainer<Object> _buildFabOpenContainer() {
+    return OpenContainer(
+      transitionType: _transitionType,
+      transitionDuration: Duration(milliseconds: 600),
+      openBuilder:
+          (BuildContext context, void Function({Object returnValue}) action) {
+        return EstabelecimentoCrud(new Estabelecimento());
       },
-      itemCount: items.length,
+      closedBuilder: (BuildContext context, void Function() action) {
+        return
+            // Icon(Icons.add, size: 90,);
+            FloatingActionButton(
+                //backgroundColor: Colors.grey[850],
+                onPressed: null,
+                child: Icon(Icons.add));
+      },
+      closedElevation: 50,
+      closedShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(
+          Radius.circular(50),
+        ),
+      ),
     );
   }
 
-  Widget _getSlidableWithLists(
-      BuildContext context, int index, Axis direction) {
-    final Estabelecimento item = items[index];
-    //final int t = index;
-    return Slidable(
-      key: Key('${item.id}'),
-      controller: slidableController,
-      direction: direction,
-      dismissal: SlidableDismissal(
-        child: SlidableDrawerDismissal(),
-        onDismissed: (actionType) {
-          _showSnackBar(
-              context,
-              actionType == SlideActionType.primary
-                  ? 'Dispensar arquivar'
-                  : 'Dispensar deletar');
-          setState(() {
-            items.removeAt(index);
-          });
-        },
-      ),
-      actionPane: _getActionPane(item.id),
-      actionExtentRatio: 0.25,
-      child: direction == Axis.horizontal
-          ? VerticalListItem(items[index])
-          : HorizontalListItem(items[index]),
-      actions: <Widget>[
-        IconSlideAction(
-          caption: 'Arquivar',
-          color: Colors.blue,
-          icon: Icons.archive,
-          onTap: () => _showSnackBar(context, 'Arquivar'),
-        ),
-        IconSlideAction(
-          caption: 'Share',
-          color: Colors.indigo,
-          icon: Icons.share,
-          onTap: () => _showSnackBar(context, 'Compartilhar'),
-        ),
-      ],
-      secondaryActions: <Widget>[
-        Container(
-          height: 800,
-          color: Colors.green,
-          child: Text('Ativar'),
-        ),
-        IconSlideAction(
-          caption: 'Mais',
-          color: Colors.grey.shade200,
-          icon: Icons.more_horiz,
-          onTap: () => _showSnackBar(context, 'Mais'),
-          closeOnTap: false,
-        ),
-        IconSlideAction(
-          caption: 'Deletar',
-          color: Colors.red,
-          icon: Icons.delete,
-          onTap: () => _showSnackBar(context, 'Deletar'),
-        ),
-      ],
-    );
-  }
-
-  Widget _getSlidableWithDelegates(
-      BuildContext context, int index, Axis direction) {
+  Widget _buildSlidable(BuildContext context, int index) {
     final Estabelecimento item = items[index];
 
-    return Slidable.builder(
-      key: Key(item.name),
-      controller: slidableController,
-      direction: direction,
-      dismissal: SlidableDismissal(
-        child: SlidableDrawerDismissal(),
-        closeOnCanceled: true,
-        onWillDismiss: (item.id != 10)
-            ? null
-            : (actionType) {
-                return showDialog<bool>(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text('Deletar'),
-                      content: Text('Estabelecimento será deletado. Confirma?'),
-                      actions: <Widget>[
-                        FlatButton(
-                          child: Text('Cancelar'),
-                          onPressed: () => Navigator.of(context).pop(false),
-                        ),
-                        FlatButton(
-                          child: Text('Ok'),
-                          onPressed: () => Navigator.of(context).pop(true),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-        onDismissed: (actionType) {
-          _showSnackBar(
-              context,
-              actionType == SlideActionType.primary
-                  ? 'Dispensar arquivar'
-                  : 'Dispensar deletar');
-          setState(() {
-            items.removeAt(index);
-          });
-        },
-      ),
-      actionPane: _getActionPane(item.id),
-      actionExtentRatio: 0.25,
-      child: direction == Axis.horizontal
-          ? VerticalListItem(items[index])
-          : HorizontalListItem(items[index]),
-      actionDelegate: SlideActionBuilderDelegate(
-          actionCount: 2,
-          builder: (context, index, animation, renderingMode) {
-            if (index == 0) {
-              return IconSlideAction(
-                caption: 'Arquivar',
-                color: renderingMode == SlidableRenderingMode.slide
-                    ? Colors.blue.withOpacity(animation.value)
-                    : (renderingMode == SlidableRenderingMode.dismiss
-                        ? Colors.blue
-                        : Colors.green),
-                icon: Icons.archive,
-                onTap: () async {
-                  var state = Slidable.of(context);
-                  var dismiss = await showDialog<bool>(
+    // ################################################################################################################################################
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Slidable(
+        child: ContentListItem(items[index]),
+        actionPane: SlidableDrawerActionPane(),
+        actions: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: IconSlideAction(
+              caption: 'Próximo da Fila',
+              color: Colors.deepOrange[900],
+              icon: Icons.person_outline_rounded,
+              onTap: () async {
+                // se estiver fechado
+                if (!item.aberto &&
+                    (item.pessoasNaFila == null || item.pessoasNaFila < 1)) {
+                  _showSnackBar(context, 'O estabelecimento está fechado.');
+                } else if (item.aberto && item.pessoasNaFila == null ||
+                    item.pessoasNaFila < 1) {
+                  _showSnackBar(
+                      context, 'O estabelecimento não tem clientes na fila.');
+                } else if (item.pessoasNaFila != null ||
+                    item.pessoasNaFila > 0) {
+                  String proximoId = await _buscaProximoCliente();
+                  var confirmacao = await showDialog<bool>(
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: Text('Deletar'),
+                        title: Text('Próximooo!'),
                         content: Text(
-                            'Estabelecimento será deletado. Confirma?'),
+                            'Vou chamar o próximo e ocupar uma mesa. Confirma?'),
                         actions: <Widget>[
                           FlatButton(
                             child: Text('Cancelar'),
                             onPressed: () => Navigator.of(context).pop(false),
                           ),
                           FlatButton(
-                            child: Text('Ok'),
+                            child: Text(
+                              'PRÓXIMO',
+                              style: TextStyle(
+                                  //color: Colors.deepOrange,
+                                  letterSpacing: 1.5,
+                                  fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () => Navigator.of(context).pop(true),
                           ),
                         ],
@@ -266,104 +162,101 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                     },
                   );
 
-                  if (dismiss) {
-                    state.dismiss();
+                  if (confirmacao) {
+                    var msg = 'chamou o cliente $proximoId, tá com fome/sede';
+                    log(msg);
+                    _showSnackBar(context, msg);
                   }
-                },
-              );
-            } else {
-              return IconSlideAction(
-                caption: 'Compartilhar',
-                color: renderingMode == SlidableRenderingMode.slide
-                    ? Colors.indigo.withOpacity(animation.value)
-                    : Colors.indigo,
-                icon: Icons.share,
-                onTap: () => _showSnackBar(context, 'Compartilhar'),
-              );
-            }
-          }),
-      secondaryActionDelegate: SlideActionBuilderDelegate(
-          actionCount: 2,
-          builder: (context, index, animation, renderingMode) {
-            if (index == 0) {
-              return IconSlideAction(
-                caption: 'Mais',
-                color: renderingMode == SlidableRenderingMode.slide
-                    ? Colors.grey.shade200.withOpacity(animation.value)
-                    : Colors.grey.shade200,
-                icon: Icons.more_horiz,
-                onTap: () => _showSnackBar(context, 'Mais'),
-                closeOnTap: false,
-              );
-            } else {
-              return IconSlideAction(
-                caption: 'Deletar',
-                color: renderingMode == SlidableRenderingMode.slide
-                    ? Colors.red.withOpacity(animation.value)
-                    : Colors.red,
-                icon: Icons.delete,
-                onTap: () => _showSnackBar(context, 'Deletar'),
-              );
-            }
-          }),
-    );
-  }
-
-  static Widget _getActionPane(int index) {
-    switch (index % 4) {
-      case 0:
-        return SlidableBehindActionPane();
-      case 1:
-        return SlidableStrechActionPane();
-      case 2:
-        return SlidableScrollActionPane();
-      case 3:
-        return SlidableDrawerActionPane();
-      default:
-        return null;
-    }
-  }
-
-  void _showSnackBar(BuildContext context, String text) {
-    Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
-  }
-}
-
-class HorizontalListItem extends StatelessWidget {
-  HorizontalListItem(this.item);
-
-  final Estabelecimento item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      width: 160.0,
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: <Widget>[
-          Expanded(
-            child: CircleAvatar(
-              backgroundColor: item.color,
-              child: Text('${item.id}'),
-              foregroundColor: Colors.white,
+                }
+              },
             ),
           ),
-          Expanded(
-            child: Center(
-              child: Text(
-                item.name,
+        ],
+        secondaryActions: [
+          OpenContainer(
+            transitionType: _transitionType,
+            transitionDuration: Duration(milliseconds: 600),
+            openBuilder: (BuildContext context,
+                void Function({Object returnValue}) action) {
+              return EstabelecimentoCrud(items[index]);
+            },
+            closedBuilder: (BuildContext context, void Function() action) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: IconSlideAction(
+                  caption: 'Editar',
+                  //color: Colors.indigo[700],
+                  icon: Icons.edit,
+                  closeOnTap: false,
+
+                  //foregroundColor: Colors.grey[850],
+                ),
+              );
+            },
+            closedElevation: 50,
+            closedColor: Colors.grey[850],
+            closedShape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(0),
               ),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: IconSlideAction(
+              caption: 'Deletar',
+              color: Colors.red[900],
+              icon: Icons.delete,
+              onTap: () async {
+                var confirmacao = await showDialog<bool>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text('Deletar?'),
+                      content: Text('Estabelecimento será deletado. Confirma?'),
+                      actions: <Widget>[
+                        FlatButton(
+                          child: Text('Cancelar'),
+                          onPressed: () => Navigator.of(context).pop(false),
+                        ),
+                        FlatButton(
+                          child: Text(
+                            'DELETAR',
+                            style: TextStyle(
+                                //color: Colors.red[300],
+                                letterSpacing: 1.5),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(true),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (confirmacao) {
+                  var msg = 'deletou ${item.nome}, haha SQN';
+                  log(msg);
+                  _showSnackBar(context, msg);
+                }
+              },
             ),
           ),
         ],
       ),
     );
   }
+
+  void _showSnackBar(BuildContext context, String text) {
+    Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<String> _buscaProximoCliente() async {
+    return Future.value('Sagüi dourado');
+  }
 }
 
-class VerticalListItem extends StatelessWidget {
-  VerticalListItem(this.item);
+class ContentListItem extends StatelessWidget {
+  ContentListItem(this.item);
 
   final Estabelecimento item;
 
@@ -375,15 +268,64 @@ class VerticalListItem extends StatelessWidget {
               ? Slidable.of(context)?.open()
               : Slidable.of(context)?.close(),
       child: Container(
-        color: Colors.white,
+        // height: 50,
+        color: Colors.grey[700],
         child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: item.color,
-            child: Text('${item.id}'),
-            foregroundColor: Colors.white,
+          leading: item.imagempr != null
+              ? ClipRRect(
+            clipBehavior: Clip.antiAliasWithSaveLayer,
+            borderRadius: BorderRadius.circular(6),
+            child: FadeInImage.memoryNetwork(
+              placeholder: kTransparentImage,
+              image: item.imagempr,
+              width: 120,
+              height: 90,
+              fit: BoxFit.fitWidth,
+            ),
+          )
+              : Image.asset(
+            'splash.png',
+            width: 120,
+            height: 90,
+            fit: BoxFit.fitHeight,
           ),
-          title: Text(item.name),
-          subtitle: Text(item.hq),
+          title: Text(item.nome),
+          subtitle: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  item.aberto
+                      ? Icon(
+                    Icons.timer,
+                    //color: Colors.grey,
+                  )
+                      : Icon(
+                    Icons.timer_off,
+                    //color: Colors.grey,
+                  ),
+                  SizedBox(
+                    width: 4,
+                  ),
+                  item.aberto
+                      ? Text(
+                    'Aberto',
+                    style: TextStyle(
+                        color: Colors.green[200],
+                        fontWeight: FontWeight.bold),
+                  )
+                      : Text('Fechado',
+                      style: TextStyle(
+                          color: Colors.red[200],
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+              item.pessoasNaFila != null && item.pessoasNaFila > 0
+                  ? Text('${item.pessoasNaFila} pessoas na fila')
+                  : Text('')
+            ],
+          ),
+          // trailing: Text('T'),
         ),
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:organiza_fila_admin/estabelecimento_list.dart';
 import 'package:splashscreen/splashscreen.dart';
-
-import 'estabelecimento_list.dart';
 
 class MySplash extends StatefulWidget {
   @override
@@ -12,24 +11,11 @@ class _MySplashState extends State<MySplash> {
   @override
   Widget build(BuildContext context) {
     return new SplashScreen(
-      seconds: 5,
-      navigateAfterSeconds:
-          new EstabelecimentoList("Listagem de Estabelecimentos"),
-      title: new Text(
-        'Organiza Fila!',
-        style: new TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
-      ),
-      image: Image.asset("logo.png"),
-      gradientBackground: LinearGradient(
-        begin: Alignment.topRight,
-        end: Alignment.bottomLeft,
-        colors: [Color(0xffED213A), Color(0xff93291E)],
-      ),
-      styleTextUnderTheLoader: new TextStyle(),
-      photoSize: 100.0,
-      onClick: () => print("Clicou no splash!"),
-      loaderColor: Colors.deepOrange,
-      loadingText: new Text("SOLETRE em voz alta: Schwarzenegger, Arnold"),
+      seconds: 2,
+      navigateAfterSeconds: new EstabelecimentoList(),
+      //backgroundColor: Colors.black,
+      imageBackground: AssetImage('splash.png'),
+      loaderColor: Colors.white,
     );
   }
 }
