@@ -162,8 +162,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
           child: RaisedButton(
             elevation: 5.0,
             onPressed: () {
-              log('o vivente pregou o dedo no CANCELAR');
-              Navigator.of(context).pop(false);
+              _cancelForm();
             },
             padding: EdgeInsets.all(15.0),
             shape: RoundedRectangleBorder(
@@ -188,8 +187,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
           child: RaisedButton(
             elevation: 5.0,
             onPressed: () {
-              log('o vivente pregou o dedo no SALVAR');
-              Navigator.of(context).pop(true);
+              _saveForm();
             },
             padding: EdgeInsets.all(15.0),
             shape: RoundedRectangleBorder(
@@ -282,119 +280,154 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   }
 
   Widget _buildImagesStack() {
-    return Stack(
-      children: [
-        Center(
-          child: GestureDetector(
-            onTap: () {
+    return Stack(children: [
+      // imagem de fundo
+      Center(
+        child:
+            _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
+      ),
+      // ícones para a imagem de fundo
+      Opacity(
+        opacity: 0.5,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Alterar imagem de fundo',
+                  icon: Icon(Icons.camera_alt),
+                  iconSize: 20,
+                  splashRadius: 20,
+                  onPressed: () {
+                    _showImgPickerDlg(context).then((value) {
+                      if (value != null) {
+                        setState(() {
+                          _imgBg = value;
+                        });
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 82,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Remover imagem de fundo',
+                  icon: Icon(Icons.image_not_supported),
+                  iconSize: 20,
+                  splashRadius: 20,
+                  onPressed: () {
+                    if (_imgBg != null) {
+                      _confirmImageClear(context).then((value) {
+                        if (value) {
+                          setState(() {
+                            _imgBg = null;
+                          });
+                        }
+                      });
+                    } else {
+                      log('sem imagem de fundo para limpar');
+                      SystemSound.play(SystemSoundType.click);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      // imagem do avatar
+      Center(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 32,
+            ),
+            CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.black38,
+              child: _imgPr != null
+                  ? _renderImagemPr()
+                  : _renderImagemPrPlaceholder(),
+            ),
+          ],
+        ),
+      ),
+      // ícones para a imagem do avatar
+      Opacity(
+        opacity: 0.5,
+        child: Center(
+            child: Column(children: [
+          SizedBox(
+            height: 22,
+          ),
+          IconButton(
+            tooltip: 'Alterar imagem de avatar',
+            icon: Icon(Icons.camera_alt),
+            iconSize: 20,
+            //splashRadius: 30,
+            onPressed: () {
               _showImgPickerDlg(context).then((value) {
                 if (value != null) {
                   setState(() {
-                    _imgBg = value;
+                    _imgPr = value;
                   });
                 }
               });
             },
-            onLongPress: () {
-              if (_imgBg != null) {
+          ),
+          SizedBox(
+            height: 32,
+          ),
+          IconButton(
+            tooltip: 'Remover imagem de avatar',
+            icon: Icon(Icons.image_not_supported),
+            iconSize: 20,
+            //splashRadius: 30,
+            onPressed: () {
+              if (_imgPr != null) {
                 _confirmImageClear(context).then((value) {
                   if (value) {
                     setState(() {
-                      _imgBg = null;
+                      _imgPr = null;
                     });
                   }
                 });
               } else {
-                log('sem imagem para limpar');
+                log('sem imagem de avatar para limpar');
                 SystemSound.play(SystemSoundType.click);
               }
             },
-            child: _imgBg != null
-                ? _renderImagemBg()
-                : _renderImagemBgPlaceholder(),
           ),
-        ),
-        Column(
-          children: [
-            SizedBox(
-              height: 46,
-            ),
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  _showImgPickerDlg(context).then((value) {
-                    if (value != null) {
-                      setState(() {
-                        _imgPr = value;
-                      });
-                    }
-                  });
-                },
-                onLongPress: () {
-                  if (_imgPr != null) {
-                    _confirmImageClear(context).then((value) {
-                      if (value) {
-                        setState(() {
-                          _imgPr = null;
-                        });
-                      }
-                    });
-                  } else {
-                    log('sem imagem para limpar');
-                    SystemSound.play(SystemSoundType.click);
-                  }
-                },
-                child: CircleAvatar(
-                  radius: 55,
-                  backgroundColor: Colors.black38,
-                  child: _imgPr != null
-                      ? _renderImagemPr()
-                      : _renderImagemPrPlaceholder(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+        ])),
+      ),
+    ]);
   }
 
   Widget _renderImagemPrPlaceholder() {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-              //color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(52.5)),
-          width: 105,
-          height: 105,
-        ),
-        Center(
-          child: Row(
-            children: [
-              Icon(
-                Icons.edit,
-                color: Colors.deepOrange,
-              ),
-              Icon(
-                Icons.delete,
-                color: Colors.deepOrange,
-              ),
-            ],
-          ),
-        )
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        //color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(52.5)),
+      width: 100,
+      height: 100,
     );
   }
 
   ClipRRect _renderImagemPr() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(52.5),
+      borderRadius: BorderRadius.circular(50),
       child: Image.file(
         _imgPr,
         width: 105,
         height: 105,
-        fit: BoxFit.fitWidth,
+        fit: BoxFit.cover,
       ),
     );
   }
@@ -405,10 +438,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            //color: Colors.grey[200],
+            color: Colors.grey,
           ),
           width: 400,
-          height: 200,
+          height: 180,
         ),
       ],
     );
@@ -420,8 +453,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       child: Image.file(
         _imgBg,
         width: 400,
-        height: 200,
-        fit: BoxFit.fitWidth,
+        height: 180,
+        fit: BoxFit.cover,
       ),
     );
   }
@@ -488,10 +521,12 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   }
 
   void _saveForm() {
+    log('o vivente pregou o dedo no SALVAR');
     Navigator.of(context).pop(true);
   }
 
   void _cancelForm() {
+    log('o vivente pregou o dedo no CANCELAR');
     Navigator.of(context).pop(false);
   }
 }
