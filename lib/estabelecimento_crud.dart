@@ -25,6 +25,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   int _mesas = 0;
   String _sobre;
 
+  // aux
+  Image _imgBg;
+  Image _imgPr;
+
   // controles
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
@@ -53,35 +57,38 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   @override
   Widget build(BuildContext context) {
     log('crud build');
-    return Scaffold(
-      appBar: AppBar(
-        //backgroundColor: Colors.grey[850],
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Image.asset(
-              'logo.png',
-              width: 64,
-              fit: BoxFit.fitWidth,
-            ),
-            SizedBox(
-              width: 10,
-            ),
-            Text('Editar Estabelecimento'),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Container(
-          margin: EdgeInsets.all(30),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: _buildForm(),
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        appBar: AppBar(
+          //backgroundColor: Colors.grey[850],
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Image.asset(
+                'logo.png',
+                width: 64,
+                fit: BoxFit.fitWidth,
+              ),
+              SizedBox(
+                width: 10,
+              ),
+              Text('Editar Estabelecimento'),
+            ],
           ),
         ),
+        body: SingleChildScrollView(
+          child: Container(
+            margin: EdgeInsets.all(30),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: _buildForm(),
+            ),
+          ),
+        ),
+        //backgroundColor: Colors.grey[600],
       ),
-      //backgroundColor: Colors.grey[600],
     );
   }
 
@@ -248,6 +255,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                       title: new Text('Galeria'),
                       onTap: () async {
                         var f = await _getImg(context, ImageSource.gallery);
+                        log('retornando $f');
                         Navigator.of(context).pop(f);
                       }),
                   new ListTile(
@@ -255,6 +263,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                     title: new Text('Câmera'),
                     onTap: () async {
                       var f = await _getImg(context, ImageSource.camera);
+                      log('retornando $f');
                       Navigator.of(context).pop(f);
                     },
                   ),
@@ -271,9 +280,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return Stack(children: [
       // imagem de fundo
       Center(
-        child: widget.estabelecimento.imagembg != null
-            ? _renderImagemBg()
-            : _renderImagemBgPlaceholder(),
+        child:
+            _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
       ),
       // ícones para a imagem de fundo
       Opacity(
@@ -290,9 +298,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                   splashRadius: 20,
                   onPressed: () {
                     _showImgPickerDlg(context).then((value) {
+                      log('recebi $value');
                       if (value != null) {
                         setState(() {
-                          widget.estabelecimento.imgBg = value;
+                          _imgBg = value;
                         });
                       }
                     });
@@ -312,11 +321,11 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                   iconSize: 20,
                   splashRadius: 20,
                   onPressed: () {
-                    if (widget.estabelecimento.imgBg != null) {
+                    if (_imgBg != null) {
                       _confirmImageClear(context).then((value) {
                         if (value) {
                           setState(() {
-                            widget.estabelecimento.imgBg = null;
+                            _imgBg = null;
                           });
                         }
                       });
@@ -341,7 +350,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             CircleAvatar(
               radius: 55,
               backgroundColor: Colors.black38,
-              child: widget.estabelecimento.imagempr != null
+              child: _imgPr != null
                   ? _renderImagemPr()
                   : _renderImagemPrPlaceholder(),
             ),
@@ -363,9 +372,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             //splashRadius: 30,
             onPressed: () {
               _showImgPickerDlg(context).then((value) {
+                log('recebi $value');
                 if (value != null) {
                   setState(() {
-                    widget.estabelecimento.imgPr = value;
+                    _imgPr = value;
                   });
                 }
               });
@@ -380,11 +390,11 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             iconSize: 20,
             //splashRadius: 30,
             onPressed: () {
-              if (widget.estabelecimento.imgPr != null) {
+              if (_imgPr != null) {
                 _confirmImageClear(context).then((value) {
                   if (value) {
                     setState(() {
-                      widget.estabelecimento.imgPr = null;
+                      _imgPr = null;
                     });
                   }
                 });
@@ -412,7 +422,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   ClipRRect _renderImagemPr() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(50),
-      child: widget.estabelecimento.imgPr,
+      child: _imgPr,
     );
   }
 
@@ -434,7 +444,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   ClipRRect _renderImagemBg() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: widget.estabelecimento.imgBg,
+      child: _imgBg,
     );
   }
 
@@ -507,5 +517,31 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   void _cancelForm() {
     log('o vivente pregou o dedo no CANCELAR');
     Navigator.of(context).pop(false);
+  }
+
+  Future<bool> _onBackPressed() {
+    return showDialog(
+      context: context,
+      builder: (context) =>
+      new AlertDialog(
+        title: new Text('Tem certeza?'),
+        content: new Text('Alterações serão descartadas. Confirma?'),
+        actions: [
+          FlatButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              icon: Icon(Icons.cancel_rounded),
+              label: Text('Não')),
+          FlatButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              icon: Icon(Icons.check_circle),
+              label: Text('Descartar'))
+        ],
+      ),
+    ) ??
+        false;
   }
 }
