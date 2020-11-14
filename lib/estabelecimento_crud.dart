@@ -249,18 +249,18 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     );
   }
 
-  Future<Image> _getImg(context, src) async {
-    Image img;
+  Future<File> _getImg(context, src) async {
     var f = await picker.getImage(
       source: src,
     );
     if (f != null) {
-      img = Image.file(File(f.path));
+      return Future.value(File(f.path));
+    } else {
+      return Future.value(null);
     }
-    return Future.value(img);
   }
 
-  Future<Image> _showImgPickerDlg(context) async {
+  Future<File> _showImgPickerDlg(context) async {
     var f = await showModalBottomSheet(
         context: context,
         builder: (BuildContext bc) {
@@ -318,8 +318,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                     _showImgPickerDlg(context).then((value) {
                       log('recebi $value');
                       if (value != null) {
+                        var img = Image.file(value,
+                            width: 480, height: 180, fit: BoxFit.cover);
                         setState(() {
-                          _imgBg = value;
+                          _imgBg = img;
                         });
                       }
                     });
@@ -392,8 +394,11 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
               _showImgPickerDlg(context).then((value) {
                 log('recebi $value');
                 if (value != null) {
+                  var img = Image.file(value, width: 100,
+                      height: 100,
+                      fit: BoxFit.cover);
                   setState(() {
-                    _imgPr = value;
+                    _imgPr = img;
                   });
                 }
               });
