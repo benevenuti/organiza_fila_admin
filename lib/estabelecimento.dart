@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Estabelecimento {
   String id;
   String nome;
@@ -8,6 +10,9 @@ class Estabelecimento {
   int mesasDisponiveis;
   String sobre;
   int pessoasNaFila;
+
+  Image imgBg;
+  Image imgPr;
 
   Estabelecimento();
 

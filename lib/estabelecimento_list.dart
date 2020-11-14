@@ -273,22 +273,22 @@ class ContentListItem extends StatelessWidget {
         child: ListTile(
           leading: item.imagempr != null
               ? ClipRRect(
-            clipBehavior: Clip.antiAliasWithSaveLayer,
-            borderRadius: BorderRadius.circular(6),
-            child: FadeInImage.memoryNetwork(
-              placeholder: kTransparentImage,
-              image: item.imagempr,
-              width: 120,
-              height: 90,
-              fit: BoxFit.fitWidth,
-            ),
-          )
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  borderRadius: BorderRadius.circular(6),
+                  child: FadeInImage.memoryNetwork(
+                    placeholder: kTransparentImage,
+                    image: item.imagempr,
+                    width: 120,
+                    height: 90,
+                    fit: BoxFit.fitWidth,
+                  ),
+                )
               : Image.asset(
-            'splash.png',
-            width: 120,
-            height: 90,
-            fit: BoxFit.fitHeight,
-          ),
+                  'splash.png',
+                  width: 120,
+                  height: 90,
+                  fit: BoxFit.fitHeight,
+                ),
           title: Text(item.nome),
           subtitle: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -297,27 +297,27 @@ class ContentListItem extends StatelessWidget {
                 children: [
                   item.aberto
                       ? Icon(
-                    Icons.timer,
-                    //color: Colors.grey,
-                  )
+                          Icons.timer,
+                          //color: Colors.grey,
+                        )
                       : Icon(
-                    Icons.timer_off,
-                    //color: Colors.grey,
-                  ),
+                          Icons.timer_off,
+                          //color: Colors.grey,
+                        ),
                   SizedBox(
                     width: 4,
                   ),
                   item.aberto
                       ? Text(
-                    'Aberto',
-                    style: TextStyle(
-                        color: Colors.green[200],
-                        fontWeight: FontWeight.bold),
-                  )
+                          'Aberto',
+                          style: TextStyle(
+                              color: Colors.green[200],
+                              fontWeight: FontWeight.bold),
+                        )
                       : Text('Fechado',
-                      style: TextStyle(
-                          color: Colors.red[200],
-                          fontWeight: FontWeight.bold)),
+                          style: TextStyle(
+                              color: Colors.red[200],
+                              fontWeight: FontWeight.bold)),
                 ],
               ),
               item.pessoasNaFila != null && item.pessoasNaFila > 0

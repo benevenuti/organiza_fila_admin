@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:network_to_file_image/network_to_file_image.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
 
 class EstabelecimentoCrud extends StatefulWidget {
@@ -30,36 +29,25 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
 
-  // aux
-  File _imgPr;
-  File _imgBg;
-
   @override
   void initState() {
-    log('crud init');
+    log('crud init ini');
+    super.initState();
 
     _nome = widget.estabelecimento.nome;
     _sobre = widget.estabelecimento.sobre;
     _mesas =
         widget.estabelecimento.mesas != null ? widget.estabelecimento.mesas : 0;
-
     _aberto = widget.estabelecimento.aberto == true;
 
-    if (widget.estabelecimento != null) {
-      if (widget.estabelecimento.imagempr != null) {
-        _imgPr =
-            NetworkToFileImage(file: null, url: widget.estabelecimento.imagempr)
-                .file;
-      }
+    log('crud init end');
+  }
 
-      if (widget.estabelecimento.imagembg != null) {
-        _imgBg =
-            NetworkToFileImage(file: null, url: widget.estabelecimento.imagembg)
-                .file;
-      }
-    }
-
-    super.initState();
+  @override
+  bool get mounted {
+    var m = super.mounted;
+    log('get mounted = $m');
+    return m;
   }
 
   @override
@@ -236,18 +224,18 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     );
   }
 
-  Future<File> _getImg(context, src) async {
-    File file;
+  Future<Image> _getImg(context, src) async {
+    Image img;
     var f = await picker.getImage(
       source: src,
     );
     if (f != null) {
-      file = File(f.path);
+      img = Image.file(File(f.path));
     }
-    return Future.value(file);
+    return Future.value(img);
   }
 
-  Future<File> _showImgPickerDlg(context) async {
+  Future<Image> _showImgPickerDlg(context) async {
     var f = await showModalBottomSheet(
         context: context,
         builder: (BuildContext bc) {
@@ -283,8 +271,9 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return Stack(children: [
       // imagem de fundo
       Center(
-        child:
-            _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
+        child: widget.estabelecimento.imagembg != null
+            ? _renderImagemBg()
+            : _renderImagemBgPlaceholder(),
       ),
       // ícones para a imagem de fundo
       Opacity(
@@ -303,7 +292,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                     _showImgPickerDlg(context).then((value) {
                       if (value != null) {
                         setState(() {
-                          _imgBg = value;
+                          widget.estabelecimento.imgBg = value;
                         });
                       }
                     });
@@ -323,11 +312,11 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                   iconSize: 20,
                   splashRadius: 20,
                   onPressed: () {
-                    if (_imgBg != null) {
+                    if (widget.estabelecimento.imgBg != null) {
                       _confirmImageClear(context).then((value) {
                         if (value) {
                           setState(() {
-                            _imgBg = null;
+                            widget.estabelecimento.imgBg = null;
                           });
                         }
                       });
@@ -352,7 +341,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             CircleAvatar(
               radius: 55,
               backgroundColor: Colors.black38,
-              child: _imgPr != null
+              child: widget.estabelecimento.imagempr != null
                   ? _renderImagemPr()
                   : _renderImagemPrPlaceholder(),
             ),
@@ -376,7 +365,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
               _showImgPickerDlg(context).then((value) {
                 if (value != null) {
                   setState(() {
-                    _imgPr = value;
+                    widget.estabelecimento.imgPr = value;
                   });
                 }
               });
@@ -391,11 +380,11 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             iconSize: 20,
             //splashRadius: 30,
             onPressed: () {
-              if (_imgPr != null) {
+              if (widget.estabelecimento.imgPr != null) {
                 _confirmImageClear(context).then((value) {
                   if (value) {
                     setState(() {
-                      _imgPr = null;
+                      widget.estabelecimento.imgPr = null;
                     });
                   }
                 });
@@ -423,12 +412,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   ClipRRect _renderImagemPr() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(50),
-      child: Image.file(
-        _imgPr,
-        width: 105,
-        height: 105,
-        fit: BoxFit.cover,
-      ),
+      child: widget.estabelecimento.imgPr,
     );
   }
 
@@ -450,12 +434,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   ClipRRect _renderImagemBg() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: Image.file(
-        _imgBg,
-        width: 400,
-        height: 180,
-        fit: BoxFit.cover,
-      ),
+      child: widget.estabelecimento.imgBg,
     );
   }
 
