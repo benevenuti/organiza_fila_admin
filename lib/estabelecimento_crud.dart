@@ -44,6 +44,24 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         widget.estabelecimento.mesas != null ? widget.estabelecimento.mesas : 0;
     _aberto = widget.estabelecimento.aberto == true;
 
+    if (widget.estabelecimento.imagembg != null) {
+      _imgBg = Image.network(
+        widget.estabelecimento.imagembg,
+        fit: BoxFit.cover,
+        width: 400,
+        height: 180,
+      );
+    }
+
+    if (widget.estabelecimento.imagempr != null) {
+      _imgPr = Image.network(
+        widget.estabelecimento.imagempr,
+        fit: BoxFit.cover,
+        width: 100,
+        height: 100,
+      );
+    }
+
     log('crud init end');
   }
 
@@ -421,7 +439,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
 
   ClipRRect _renderImagemPr() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(52.5),
       child: _imgPr,
     );
   }
