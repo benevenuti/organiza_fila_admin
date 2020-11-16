@@ -1,8 +1,16 @@
+import 'package:flutter/material.dart';
+
 class Estabelecimento {
   String id;
   String nome;
   String imagembg;
+  String imagembrUrl;
+  Widget imagembgWidget;
+
   String imagempr;
+  String imagemprUrl;
+  Widget imagemprWidget;
+
   bool aberto;
   int mesas;
   int mesasDisponiveis;
@@ -11,8 +19,7 @@ class Estabelecimento {
 
   Estabelecimento();
 
-  Estabelecimento.builder(
-      this.id,
+  Estabelecimento.builder(this.id,
       this.nome,
       this.imagembg,
       this.imagempr,

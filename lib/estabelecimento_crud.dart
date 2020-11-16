@@ -83,10 +83,13 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Image.asset(
-                'logo.png',
-                width: 64,
-                fit: BoxFit.fitWidth,
+              Hero(
+                tag: 'splashscreenImage',
+                child: Image.asset(
+                  'logo.png',
+                  width: 64,
+                  fit: BoxFit.fitWidth,
+                ),
               ),
               SizedBox(
                 width: 10,

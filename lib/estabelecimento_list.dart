@@ -1,16 +1,20 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:animations/animations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
 import 'package:organiza_fila_admin/estabelecimento_crud.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 class EstabelecimentoList extends StatefulWidget {
-  EstabelecimentoList() : super();
+  final FirebaseApp firebase;
+
+  EstabelecimentoList(this.firebase) : super();
 
   final String title = "Meus Estabelecimentos";
 
@@ -22,30 +26,51 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   ContainerTransitionType _transitionType = ContainerTransitionType.fade;
 
   List<Estabelecimento> items = List.empty();
+  DatabaseError _error;
   String s = "Aguarde...";
 
-  Future<String> _loadFromAsset() async {
-    String s = await rootBundle.loadString("lib/assets/estabelecimentos.json");
-    return s;
+  DatabaseReference _empresasRef;
+  StreamSubscription<Event> _empresasSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _initDatabase();
   }
 
-  void _loadEstabelecimentos(String json) {
-    var jsonAsList = jsonDecode(json) as List;
+  void _initDatabase() {
+    final FirebaseDatabase database = FirebaseDatabase(app: widget.firebase);
 
-    setState(() {
-      items = jsonAsList.map((e) => Estabelecimento.fromJson(e)).toList();
-      s = json;
+    database.setPersistenceEnabled(true);
+    database.setPersistenceCacheSizeBytes(10000000);
+
+    _empresasRef = database.reference().child('empresas');
+    _empresasRef.keepSynced(true);
+
+    _empresasSubscription = _empresasRef.onValue.listen((Event event) {
+      log('ouvido => ${event.snapshot.value}');
+      var it = event.snapshot.value as List;
+      var il = it.map((e) => Estabelecimento.fromJson(e)).toList();
+
+      setState(() {
+        _error = null;
+        items = il;
+      });
+    }, onError: (Object o) {
+      final DatabaseError error = o;
+      log('erro ao ouvir => $error');
+
+      setState(() {
+        _error = error;
+      });
     });
   }
 
   @override
-  void initState() {
-    // carrega os dados do json
-    _loadFromAsset()
-        .then((json) => _loadEstabelecimentos(json))
-        .catchError((error) => print(error));
-
-    super.initState();
+  void dispose() {
+    super.dispose();
+    _empresasSubscription.cancel();
   }
 
   @override
@@ -54,14 +79,17 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     return Scaffold(
       appBar: AppBar(
         //backgroundColor: Colors.grey[850],
-        centerTitle: true,
+        centerTitle: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Image.asset(
-              'logo.png',
-              width: 64,
-              fit: BoxFit.fitWidth,
+            Hero(
+              tag: 'splashscreenImage',
+              child: Image.asset(
+                'logo.png',
+                width: 64,
+                fit: BoxFit.fitWidth,
+              ),
             ),
             SizedBox(
               width: 10,
@@ -71,12 +99,14 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         ),
       ),
       body: Center(
-          child: ListView.builder(
-        itemBuilder: (context, index) {
-          return _buildSlidable(context, index);
-        },
-        itemCount: items.length,
-      )),
+          child: items != null && items.length > 0
+              ? ListView.builder(
+                  itemBuilder: (context, index) {
+                    return _buildSlidable(context, index);
+                  },
+                  itemCount: items.length,
+                )
+              : Text(_error != null ? _error : 'Que pena, nada por aqui :,(')),
       //backgroundColor: Colors.grey[600],
       floatingActionButton: _buildFabOpenContainer(),
     );
@@ -241,7 +271,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     );
   }
 
-  Widget _buildActionEditar(BuildContext context, Estabelecimento item) {
+  Widget _buildActionEditar_old(BuildContext context, Estabelecimento item) {
     return OpenContainer(
       transitionType: _transitionType,
       transitionDuration: Duration(milliseconds: 600),
@@ -267,6 +297,24 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         borderRadius: BorderRadius.all(
           Radius.circular(0),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionEditar(BuildContext context, Estabelecimento item) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: IconSlideAction(
+        caption: 'Editar',
+        //color: Colors.indigo[700],
+        icon: Icons.edit,
+        closeOnTap: false,
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => EstabelecimentoCrud(item),
+          ));
+        },
+        //foregroundColor: Colors.grey[850],
       ),
     );
   }
@@ -348,35 +396,66 @@ class ContentListItem extends StatelessWidget {
 
   final Estabelecimento item;
 
+  Widget _buildDefault(Widget image) {
+    //log('_buildDefault');
+    return image == null
+        ? SizedBox(
+      width: 120,
+      height: 90,
+    )
+        : image;
+  }
+
+  Future<Widget> _buildImagePr(Estabelecimento item) async {
+    if (item.imagempr != null) {
+      if (item.imagemprUrl == null) {
+        var dUrl =
+        await FirebaseStorage.instance.ref(item.imagempr).getDownloadURL();
+        //log('consegui a url $dUrl');
+        item.imagemprUrl = dUrl;
+        if (item.imagemprWidget == null) {
+          item.imagemprWidget = FadeInImage.memoryNetwork(
+            placeholder: kTransparentImage,
+            image: item.imagemprUrl,
+            width: 120,
+            height: 90,
+            fit: BoxFit.cover,
+          );
+        }
+      }
+      return item.imagemprWidget;
+    } else {
+      return _buildDefault(item.imagemprWidget);
+    }
+  }
+
+  Widget _buildImageFromStorage() {
+    return FutureBuilder(
+      future: _buildImagePr(item),
+      initialData: _buildDefault(item.imagemprWidget),
+      builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+        return snapshot.data;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () =>
-          Slidable.of(context)?.renderingMode == SlidableRenderingMode.none
-              ? Slidable.of(context)?.open()
-              : Slidable.of(context)?.close(),
+      Slidable
+          .of(context)
+          ?.renderingMode == SlidableRenderingMode.none
+          ? Slidable.of(context)?.open()
+          : Slidable.of(context)?.close(),
       child: Container(
         // height: 50,
         color: Colors.grey[700],
         child: ListTile(
-          leading: item.imagempr != null
-              ? ClipRRect(
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  borderRadius: BorderRadius.circular(6),
-                  child: FadeInImage.memoryNetwork(
-                    placeholder: kTransparentImage,
-                    image: item.imagempr,
-                    width: 120,
-                    height: 90,
-                    fit: BoxFit.fitWidth,
-                  ),
-                )
-              : Image.asset(
-                  'splash.png',
-                  width: 120,
-                  height: 90,
-                  fit: BoxFit.fitHeight,
-                ),
+          leading: ClipRRect(
+              clipBehavior: Clip.antiAliasWithSaveLayer,
+              borderRadius: BorderRadius.circular(6),
+              child: _buildImageFromStorage()),
           title: Text(item.nome),
           subtitle: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -385,8 +464,8 @@ class ContentListItem extends StatelessWidget {
                 children: [
                   item.aberto
                       ? Icon(
-                          Icons.timer,
-                          //color: Colors.grey,
+                    Icons.timer,
+                    //color: Colors.grey,
                         )
                       : Icon(
                           Icons.timer_off,
