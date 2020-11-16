@@ -24,10 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
   transparent_image:
-  http:
-  path_provider:
-  network_to_file_image:
-  splashscreen: 1.2.0
+  splashscreen:
   flutter_slidable:
   animations: ^1.1.2
   image_picker:
@@ -46,7 +43,7 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "lib/assets/logo.png"
+  image_path: "lib/assets/img/logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
