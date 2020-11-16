@@ -19,7 +19,8 @@ class Estabelecimento {
 
   Estabelecimento();
 
-  Estabelecimento.builder(this.id,
+  Estabelecimento.builder(
+      this.id,
       this.nome,
       this.imagembg,
       this.imagempr,

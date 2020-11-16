@@ -112,29 +112,15 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     );
   }
 
-  OpenContainer<Object> _buildFabOpenContainer() {
-    return OpenContainer(
-      transitionType: _transitionType,
-      transitionDuration: Duration(milliseconds: 600),
-      openBuilder:
-          (BuildContext context, void Function({Object returnValue}) action) {
-        return EstabelecimentoCrud(new Estabelecimento());
-      },
-      closedBuilder: (BuildContext context, void Function() action) {
-        return
-            // Icon(Icons.add, size: 90,);
-            FloatingActionButton(
-                //backgroundColor: Colors.grey[850],
-                onPressed: null,
-                child: Icon(Icons.add));
-      },
-      closedElevation: 50,
-      closedShape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(
-          Radius.circular(50),
-        ),
-      ),
-    );
+  Widget _buildFabOpenContainer() {
+    return FloatingActionButton(
+        heroTag: 'tag_new_estab',
+        onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => EstabelecimentoCrud(new Estabelecimento()),
+          ));
+        },
+        child: Icon(Icons.add));
   }
 
   Widget _buildActionProximo(BuildContext context, Estabelecimento item) {
@@ -304,17 +290,20 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   Widget _buildActionEditar(BuildContext context, Estabelecimento item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
-      child: IconSlideAction(
-        caption: 'Editar',
-        //color: Colors.indigo[700],
-        icon: Icons.edit,
-        closeOnTap: false,
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => EstabelecimentoCrud(item),
-          ));
-        },
-        //foregroundColor: Colors.grey[850],
+      child: Hero(
+        tag: 'tag_${item.id}',
+        child: IconSlideAction(
+          caption: 'Editar',
+          //color: Colors.indigo[700],
+          icon: Icons.edit,
+          closeOnTap: false,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => EstabelecimentoCrud(item),
+            ));
+          },
+          //foregroundColor: Colors.grey[850],
+        ),
       ),
     );
   }
@@ -466,7 +455,7 @@ class ContentListItem extends StatelessWidget {
                       ? Icon(
                     Icons.timer,
                     //color: Colors.grey,
-                        )
+                  )
                       : Icon(
                           Icons.timer_off,
                           //color: Colors.grey,
