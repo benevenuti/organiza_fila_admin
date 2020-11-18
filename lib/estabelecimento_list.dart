@@ -47,8 +47,8 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
 
     _empresasSubscription = _empresasRef.onValue.listen((Event event) {
       log('ouvido => ${event.snapshot.value}');
-      var it = event.snapshot.value as List;
-      var il = it.map((e) => Estabelecimento.fromJson(e)).toList();
+      var it = event.snapshot.value as Map<dynamic, dynamic>;
+      var il = it.values.map((e) => Estabelecimento.fromJson(e)).toList();
 
       setState(() {
         _error = null;
@@ -68,20 +68,6 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   void dispose() {
     super.dispose();
     _empresasSubscription.cancel();
-  }
-
-  Future<void> _update(Estabelecimento item) async {
-    if (item == null) {
-      log('o vivente não salvou');
-    }
-    try {
-      var itemMap = item.toMap();
-      await _empresasRef.push().update(itemMap);
-      _showSnackBar(context, 'Estabelecimento salvo.');
-    } on Exception catch (e) {
-      var msg = 'Erro ao salvar o estabelcimento: $e';
-      _showSnackBar(context, msg);
-    }
   }
 
   @override
@@ -129,11 +115,9 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (context) {
-              return EstabelecimentoCrud(Estabelecimento());
+              return EstabelecimentoCrud(Estabelecimento(), _empresasRef);
             },
-          )).then((value) {
-            _update(value);
-          });
+          ));
         },
         child: Icon(Icons.add));
   }
@@ -285,11 +269,9 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           onTap: () {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (context) {
-                return EstabelecimentoCrud(item);
+                return EstabelecimentoCrud(item, _empresasRef);
               },
-            )).then((value) {
-              _update(value);
-            });
+            ));
           },
           //foregroundColor: Colors.grey[850],
         ),

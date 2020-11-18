@@ -1,19 +1,23 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
+import 'package:path/path.dart' as path;
 import 'package:transparent_image/transparent_image.dart';
 import 'package:uuid/uuid.dart';
 
 class EstabelecimentoCrud extends StatefulWidget {
   final Estabelecimento estabelecimento;
+  final DatabaseReference empresasRef;
 
-  EstabelecimentoCrud(this.estabelecimento);
+  EstabelecimentoCrud(this.estabelecimento, this.empresasRef);
 
   @override
   _EstabelecimentoCrudState createState() => _EstabelecimentoCrudState();
@@ -36,10 +40,16 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   // aux
   Widget _imgBg;
   Widget _imgPr;
+  String _imgBgLocal;
+  String _imgPrLocal;
+
+  bool _saving = false;
 
   // controles
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
+
+  DatabaseReference _empresasRef;
 
   @override
   void initState() {
@@ -48,8 +58,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     _id = widget.estabelecimento.id;
     _nome = widget.estabelecimento.nome;
     _sobre = widget.estabelecimento.sobre;
-    _mesas =
-        widget.estabelecimento.mesas != null ? widget.estabelecimento.mesas : 0;
+    _mesas = widget.estabelecimento.mesas ?? 0;
     _aberto = widget.estabelecimento.aberto == true;
 
     _imagembg = widget.estabelecimento.imagembg;
@@ -61,6 +70,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     imagensInit();
 
     _title = _id == null ? 'Novo estabelecimento' : 'Editar estbelecimento';
+
+    _empresasRef = widget.empresasRef;
 
     log('crud init end');
   }
@@ -149,7 +160,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             child: Form(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: _buildForm(),
+              child: _buildForm(context),
             ),
           ),
         ),
@@ -186,7 +197,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(BuildContext context) {
     return Column(
       children: [
         // icone
@@ -208,12 +219,12 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
           height: 20,
         ),
         // footer / buttons
-        _buildFooterButtons(),
+        _buildFooterButtons(context),
       ],
     );
   }
 
-  Widget _buildFooterButtons() {
+  Widget _buildFooterButtons(BuildContext context) {
     return Column(
       //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -253,22 +264,36 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             child: RaisedButton(
               elevation: 5.0,
               onPressed: () {
-                _saveForm();
+                _saveForm(context);
               },
               padding: EdgeInsets.all(15.0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
               color: Colors.white,
-              child: Text(
-                'SALVAR',
-                style: TextStyle(
-                  color: Colors.cyan,
-                  letterSpacing: 1.5,
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  // fontFamily: 'OpenSans',
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'SALVAR',
+                    style: TextStyle(
+                      color: Colors.cyan,
+                      letterSpacing: 1.5,
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                      // fontFamily: 'OpenSans',
+                    ),
+                  ),
+                  SizedBox(
+                    width: 6,
+                  ),
+                  _saving
+                      ? CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.cyan),
+                        )
+                      : Container()
+                ],
               ),
             ),
           ),
@@ -371,13 +396,15 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                   onPressed: () {
                     _showImgPickerDlg(context).then((value) {
                       log('recebi $value');
+                      var img;
                       if (value != null) {
-                        var img = Image.file(value,
+                        img = Image.file(value,
                             width: 480, height: 180, fit: BoxFit.cover);
-                        setState(() {
-                          _imgBg = img;
-                        });
                       }
+                      setState(() {
+                        _imgBg = img;
+                        _imgBgLocal = value.path;
+                      });
                     });
                   },
                 ),
@@ -400,6 +427,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                         if (value) {
                           setState(() {
                             _imgBg = null;
+                            _imgBgLocal = null;
                           });
                         }
                       });
@@ -447,13 +475,15 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                 onPressed: () {
                   _showImgPickerDlg(context).then((value) {
                     log('recebi $value');
+                    var img;
                     if (value != null) {
-                      var img = Image.file(value,
+                      img = Image.file(value,
                           width: 100, height: 100, fit: BoxFit.cover);
-                      setState(() {
-                        _imgPr = img;
-                      });
                     }
+                    setState(() {
+                      _imgPr = img;
+                      _imgPrLocal = value.path;
+                    });
                   });
                 },
               ),
@@ -471,6 +501,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                       if (value) {
                         setState(() {
                           _imgPr = null;
+                          _imgPrLocal = null;
                         });
                       }
                     });
@@ -585,8 +616,27 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return null;
   }
 
-  void _saveForm() {
+  void _saveForm(BuildContext context) async {
     log('o vivente pregou o dedo no SALVAR');
+    if (_saving) {
+      return;
+    }
+    setState(() {
+      _saving = true;
+    });
+
+    _fillEstabelecimento();
+
+    await _update(context, widget.estabelecimento);
+
+    setState(() {
+      _saving = false;
+    });
+
+    Navigator.of(context).pop(true);
+  }
+
+  void _fillEstabelecimento() {
     if (_id == null) {
       log('gerando novo estabelecimento');
       _id = Uuid()
@@ -596,6 +646,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       widget.estabelecimento.mesa = List(0);
       widget.estabelecimento.pessoasNaFila = 0;
       widget.estabelecimento.mesasDisponiveis = _mesas;
+      widget.estabelecimento.isNew = true;
     }
 
     widget.estabelecimento.nome = _nome;
@@ -603,8 +654,20 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     widget.estabelecimento.mesas = _mesas;
     widget.estabelecimento.aberto = _aberto;
 
-    log('o vivente pregou o dedo no SALVAR');
-    Navigator.of(context).pop(widget.estabelecimento);
+    DateFormat dateFormat = DateFormat("yyyyMMdd_HHmmss");
+    String _now = dateFormat.format(DateTime.now());
+
+    if (_imgPrLocal != null) {
+      var _ext = path.extension(_imgPrLocal).toLowerCase();
+      widget.estabelecimento.imagempr = 'images/empresas/$_id/pr_$_now$_ext';
+      widget.estabelecimento.imagemprLocal = _imgPrLocal;
+    }
+
+    if (_imgBgLocal != null) {
+      var _ext = path.extension(_imgBgLocal).toLowerCase();
+      widget.estabelecimento.imagembg = 'images/empresas/$_id/bg_$_now$_ext';
+      widget.estabelecimento.imagembgLocal = _imgBgLocal;
+    }
   }
 
   void _cancelForm() {
@@ -617,7 +680,63 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return o.id != _id ||
         o.nome != _nome ||
         o.sobre != _sobre ||
-        o.mesas != o.mesas;
+        o.mesas != _mesas ||
+        o.imagembg != _imagembg ||
+        o.imagempr != _imagempr;
+  }
+
+  Future<void> _update(BuildContext context, Estabelecimento item) async {
+    if (item == null) {
+      log('o vivente não salvou');
+    }
+    try {
+      var itemMap = item.toMap();
+      if (item.isNew) {
+        await _empresasRef.push().update(itemMap);
+      } else {
+        var f = _empresasRef
+            .orderByChild('id')
+            .equalTo(item.id)
+            .once()
+            .then((value) {
+          //var m = value.value as Map<dynamic, dynamic>;
+          log('chave ${value.key}');
+          log('valor ${value.value}');
+
+          (value.value as Map<dynamic, dynamic>).forEach((key, value) {
+            var m = {
+              '$key': itemMap
+            };
+            _empresasRef.update(m);
+          });
+        });
+      }
+      if (item.imagemprLocal != null) {
+        await _uploadFile(item.imagemprLocal, item.imagempr);
+      }
+      if (item.imagembgLocal != null) {
+        await _uploadFile(item.imagembgLocal, item.imagembg);
+      }
+      _showSnackBar(context, 'Estabelecimento salvo.');
+    } on Exception catch (e) {
+      var msg = 'Erro ao salvar o estabelcimento: $e';
+      _showSnackBar(context, msg);
+    }
+
+    setState(() {
+      _saving = false;
+    });
+  }
+
+  Future<void> _uploadFile(String localFile, String remoteFile) async {
+    File file = File(localFile);
+    try {
+      await FirebaseStorage.instance.ref(remoteFile).putFile(file);
+    } on FirebaseException catch (e) {
+      var msg = 'erro ao subir $localFile -> $remoteFile';
+      log(msg);
+      _showSnackBar(context, msg);
+    }
   }
 
   Future<bool> _onBackPressed() {
@@ -648,5 +767,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     } else {
       return Future.value(true);
     }
+  }
+
+  void _showSnackBar(BuildContext context, String text) {
+    //Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
+    log(text);
   }
 }

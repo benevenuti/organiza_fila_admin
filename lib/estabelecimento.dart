@@ -7,10 +7,12 @@ class Estabelecimento {
   String imagembg;
   String imagembgUrl;
   Widget imagembgWidget;
+  String imagembgLocal;
 
   String imagempr;
   String imagemprUrl;
   Widget imagemprWidget;
+  String imagemprLocal;
 
   bool aberto;
   int mesas;
@@ -19,6 +21,8 @@ class Estabelecimento {
   int pessoasNaFila;
   List<dynamic> mesa;
   List<dynamic> fila;
+
+  bool isNew = false;
 
   Estabelecimento();
 
