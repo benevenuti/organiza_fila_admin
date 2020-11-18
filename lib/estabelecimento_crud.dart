@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
@@ -333,10 +334,32 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       source: src,
     );
     if (f != null) {
-      return Future.value(File(f.path));
+      return _cropImage(f.path);
     } else {
       return Future.value(null);
     }
+  }
+
+  Future<File> _cropImage(String path) async {
+    File croppedFile = await ImageCropper.cropImage(
+        sourcePath: path,
+        aspectRatioPresets: [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9,
+        ],
+        androidUiSettings: AndroidUiSettings(
+            toolbarTitle: 'Recorte sua imagem',
+            // toolbarColor: Colors.deepOrange,
+            // toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true),
+        iosUiSettings: IOSUiSettings(
+          title: 'Recorte sua imagem',
+        ));
+    return croppedFile;
   }
 
   Future<File> _showImgPickerDlg(context) async {
