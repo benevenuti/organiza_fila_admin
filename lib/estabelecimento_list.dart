@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:animations/animations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
 import 'package:organiza_fila_admin/estabelecimento_crud.dart';
-import 'package:transparent_image/transparent_image.dart';
+
+import 'content_list_item.dart';
 
 class EstabelecimentoList extends StatefulWidget {
   final FirebaseApp firebase;
@@ -23,8 +22,6 @@ class EstabelecimentoList extends StatefulWidget {
 }
 
 class _EstabelecimentoListState extends State<EstabelecimentoList> {
-  ContainerTransitionType _transitionType = ContainerTransitionType.fade;
-
   List<Estabelecimento> items = List.empty();
   DatabaseError _error;
   String s = "Aguarde...";
@@ -73,6 +70,20 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     _empresasSubscription.cancel();
   }
 
+  Future<void> _update(Estabelecimento item) async {
+    if (item == null) {
+      log('o vivente não salvou');
+    }
+    try {
+      var itemMap = item.toMap();
+      await _empresasRef.push().update(itemMap);
+      _showSnackBar(context, 'Estabelecimento salvo.');
+    } on Exception catch (e) {
+      var msg = 'Erro ao salvar o estabelcimento: $e';
+      _showSnackBar(context, msg);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     log('list build');
@@ -117,8 +128,12 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         heroTag: 'tag_new_estab',
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => EstabelecimentoCrud(new Estabelecimento()),
-          ));
+            builder: (context) {
+              return EstabelecimentoCrud(Estabelecimento());
+            },
+          )).then((value) {
+            _update(value);
+          });
         },
         child: Icon(Icons.add));
   }
@@ -188,7 +203,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         icon: Icons.event_seat,
         onTap: () async {
           // calcula o delta
-          int mesasOcupadas = item.mesas - item.mesasDisponiveis;
+          int mesasOcupadas = (item.mesas ?? 0) - (item.mesasDisponiveis ?? 0);
 
           // se estiver fechado
           if (!item.aberto && mesasOcupadas == 0) {
@@ -257,36 +272,6 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     );
   }
 
-  Widget _buildActionEditar_old(BuildContext context, Estabelecimento item) {
-    return OpenContainer(
-      transitionType: _transitionType,
-      transitionDuration: Duration(milliseconds: 600),
-      openBuilder:
-          (BuildContext context, void Function({Object returnValue}) action) {
-        return EstabelecimentoCrud(item);
-      },
-      closedBuilder: (BuildContext context, void Function() action) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: IconSlideAction(
-            caption: 'Editar',
-            //color: Colors.indigo[700],
-            icon: Icons.edit,
-            closeOnTap: false,
-            //foregroundColor: Colors.grey[850],
-          ),
-        );
-      },
-      closedElevation: 50,
-      closedColor: Colors.grey[850],
-      closedShape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(
-          Radius.circular(0),
-        ),
-      ),
-    );
-  }
-
   Widget _buildActionEditar(BuildContext context, Estabelecimento item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
@@ -299,8 +284,12 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           closeOnTap: false,
           onTap: () {
             Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => EstabelecimentoCrud(item),
-            ));
+              builder: (context) {
+                return EstabelecimentoCrud(item);
+              },
+            )).then((value) {
+              _update(value);
+            });
           },
           //foregroundColor: Colors.grey[850],
         ),
@@ -374,116 +363,8 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  Future<String> _buscaProximoCliente(BuildContext context,
-      Estabelecimento item) async {
+  Future<String> _buscaProximoCliente(
+      BuildContext context, Estabelecimento item) async {
     return Future.value('Sagüi dourado');
-  }
-}
-
-class ContentListItem extends StatelessWidget {
-  ContentListItem(this.item);
-
-  final Estabelecimento item;
-
-  Widget _buildDefault(Widget image) {
-    //log('_buildDefault');
-    return image == null
-        ? SizedBox(
-      width: 120,
-      height: 90,
-    )
-        : image;
-  }
-
-  Future<Widget> _buildImagePr(Estabelecimento item) async {
-    if (item.imagempr != null) {
-      if (item.imagemprUrl == null) {
-        var dUrl =
-        await FirebaseStorage.instance.ref(item.imagempr).getDownloadURL();
-        //log('consegui a url $dUrl');
-        item.imagemprUrl = dUrl;
-        if (item.imagemprWidget == null) {
-          item.imagemprWidget = FadeInImage.memoryNetwork(
-            placeholder: kTransparentImage,
-            image: item.imagemprUrl,
-            width: 120,
-            height: 90,
-            fit: BoxFit.cover,
-          );
-        }
-      }
-      return item.imagemprWidget;
-    } else {
-      return _buildDefault(item.imagemprWidget);
-    }
-  }
-
-  Widget _buildImageFromStorage() {
-    return FutureBuilder(
-      future: _buildImagePr(item),
-      initialData: _buildDefault(item.imagemprWidget),
-      builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
-        return snapshot.data;
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () =>
-      Slidable
-          .of(context)
-          ?.renderingMode == SlidableRenderingMode.none
-          ? Slidable.of(context)?.open()
-          : Slidable.of(context)?.close(),
-      child: Container(
-        // height: 50,
-        color: Colors.grey[700],
-        child: ListTile(
-          leading: ClipRRect(
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              borderRadius: BorderRadius.circular(6),
-              child: _buildImageFromStorage()),
-          title: Text(item.nome),
-          subtitle: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  item.aberto
-                      ? Icon(
-                    Icons.timer,
-                    //color: Colors.grey,
-                  )
-                      : Icon(
-                          Icons.timer_off,
-                          //color: Colors.grey,
-                        ),
-                  SizedBox(
-                    width: 4,
-                  ),
-                  item.aberto
-                      ? Text(
-                          'Aberto',
-                          style: TextStyle(
-                              color: Colors.green[200],
-                              fontWeight: FontWeight.bold),
-                        )
-                      : Text('Fechado',
-                          style: TextStyle(
-                              color: Colors.red[200],
-                              fontWeight: FontWeight.bold)),
-                ],
-              ),
-              item.pessoasNaFila != null && item.pessoasNaFila > 0
-                  ? Text('${item.pessoasNaFila} pessoas na fila')
-                  : Text('')
-            ],
-          ),
-          // trailing: Text('T'),
-        ),
-      ),
-    );
   }
 }

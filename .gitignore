@@ -1,3 +1,6 @@
+# protected
+**/google-services.json
+
 # Miscellaneous
 *.class
 *.log

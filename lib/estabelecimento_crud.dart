@@ -1,11 +1,14 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
+import 'package:transparent_image/transparent_image.dart';
+import 'package:uuid/uuid.dart';
 
 class EstabelecimentoCrud extends StatefulWidget {
   final Estabelecimento estabelecimento;
@@ -17,17 +20,22 @@ class EstabelecimentoCrud extends StatefulWidget {
 }
 
 class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
+  String _title;
+
   // campos do estabelecimento
+  dynamic _id;
   String _nome;
   String _imagembg;
   String _imagempr;
+  String _imagembgUrl;
+  String _imagemprUrl;
   bool _aberto = true;
   int _mesas = 0;
   String _sobre;
 
   // aux
-  Image _imgBg;
-  Image _imgPr;
+  Widget _imgBg;
+  Widget _imgPr;
 
   // controles
   final _formKey = GlobalKey<FormState>();
@@ -37,30 +45,22 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   void initState() {
     log('crud init ini');
     super.initState();
-
+    _id = widget.estabelecimento.id;
     _nome = widget.estabelecimento.nome;
     _sobre = widget.estabelecimento.sobre;
     _mesas =
         widget.estabelecimento.mesas != null ? widget.estabelecimento.mesas : 0;
     _aberto = widget.estabelecimento.aberto == true;
 
-    if (widget.estabelecimento.imagembg != null) {
-      _imgBg = Image.network(
-        widget.estabelecimento.imagembg,
-        fit: BoxFit.cover,
-        width: 400,
-        height: 180,
-      );
-    }
+    _imagembg = widget.estabelecimento.imagembg;
+    _imagembgUrl = widget.estabelecimento.imagembgUrl;
 
-    if (widget.estabelecimento.imagempr != null) {
-      _imgPr = Image.network(
-        widget.estabelecimento.imagempr,
-        fit: BoxFit.cover,
-        width: 100,
-        height: 100,
-      );
-    }
+    _imagempr = widget.estabelecimento.imagempr;
+    _imagemprUrl = widget.estabelecimento.imagemprUrl;
+
+    imagensInit();
+
+    _title = _id == null ? 'Novo estabelecimento' : 'Editar estbelecimento';
 
     log('crud init end');
   }
@@ -70,6 +70,51 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     var m = super.mounted;
     log('get mounted = $m');
     return m;
+  }
+
+  void imagensInit() async {
+    _imgBgInit();
+    _imgPrInit();
+  }
+
+  void _imgPrInit() async {
+    if (_imagempr != null) {
+      if (_imagemprUrl == null) {
+        _imagemprUrl =
+            await FirebaseStorage.instance.ref(_imagempr).getDownloadURL();
+      }
+      var img = FadeInImage.memoryNetwork(
+        placeholder: kTransparentImage,
+        image: _imagemprUrl,
+        fit: BoxFit.cover,
+        width: 100,
+        height: 100,
+      );
+
+      setState(() {
+        _imgPr = img;
+      });
+    }
+  }
+
+  void _imgBgInit() async {
+    if (_imagembg != null) {
+      if (_imagembgUrl == null) {
+        _imagembgUrl =
+            await FirebaseStorage.instance.ref(_imagembg).getDownloadURL();
+      }
+      var img = FadeInImage.memoryNetwork(
+        placeholder: kTransparentImage,
+        image: _imagembgUrl,
+        fit: BoxFit.cover,
+        width: 400,
+        height: 180,
+      );
+
+      setState(() {
+        _imgBg = img;
+      });
+    }
   }
 
   @override
@@ -94,7 +139,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
               SizedBox(
                 width: 10,
               ),
-              Text('Editar Estabelecimento'),
+              Text(_title),
             ],
           ),
         ),
@@ -308,7 +353,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       // imagem de fundo
       Center(
         child:
-            _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
+        _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
       ),
       // ícones para a imagem de fundo
       Opacity(
@@ -391,51 +436,51 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         opacity: 0.5,
         child: Center(
             child: Column(children: [
-          SizedBox(
-            height: 22,
-          ),
-          IconButton(
-            tooltip: 'Alterar imagem de avatar',
-            icon: Icon(Icons.camera_alt),
-            iconSize: 20,
-            //splashRadius: 30,
-            onPressed: () {
-              _showImgPickerDlg(context).then((value) {
-                log('recebi $value');
-                if (value != null) {
-                  var img = Image.file(value,
-                      width: 100, height: 100, fit: BoxFit.cover);
-                  setState(() {
-                    _imgPr = img;
+              SizedBox(
+                height: 22,
+              ),
+              IconButton(
+                tooltip: 'Alterar imagem de avatar',
+                icon: Icon(Icons.camera_alt),
+                iconSize: 20,
+                //splashRadius: 30,
+                onPressed: () {
+                  _showImgPickerDlg(context).then((value) {
+                    log('recebi $value');
+                    if (value != null) {
+                      var img = Image.file(value,
+                          width: 100, height: 100, fit: BoxFit.cover);
+                      setState(() {
+                        _imgPr = img;
+                      });
+                    }
                   });
-                }
-              });
-            },
-          ),
-          SizedBox(
-            height: 32,
-          ),
-          IconButton(
-            tooltip: 'Remover imagem de avatar',
-            icon: Icon(Icons.image_not_supported),
-            iconSize: 20,
-            //splashRadius: 30,
-            onPressed: () {
-              if (_imgPr != null) {
-                _confirmImageClear(context).then((value) {
-                  if (value) {
-                    setState(() {
-                      _imgPr = null;
+                },
+              ),
+              SizedBox(
+                height: 32,
+              ),
+              IconButton(
+                tooltip: 'Remover imagem de avatar',
+                icon: Icon(Icons.image_not_supported),
+                iconSize: 20,
+                //splashRadius: 30,
+                onPressed: () {
+                  if (_imgPr != null) {
+                    _confirmImageClear(context).then((value) {
+                      if (value) {
+                        setState(() {
+                          _imgPr = null;
+                        });
+                      }
                     });
+                  } else {
+                    log('sem imagem de avatar para limpar');
+                    SystemSound.play(SystemSoundType.click);
                   }
-                });
-              } else {
-                log('sem imagem de avatar para limpar');
-                SystemSound.play(SystemSoundType.click);
-              }
-            },
-          ),
-        ])),
+                },
+              ),
+            ])),
       ),
     ]);
   }
@@ -497,8 +542,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   Widget _buildFieldSobre() {
     return TextFormField(
       style: TextStyle(
-          //backgroundColor: Colors.grey[850]
-          ),
+        //backgroundColor: Colors.grey[850]
+      ),
       keyboardType: TextInputType.multiline,
       maxLength: 300,
       minLines: 1,
@@ -542,36 +587,66 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
 
   void _saveForm() {
     log('o vivente pregou o dedo no SALVAR');
-    Navigator.of(context).pop(true);
+    if (_id == null) {
+      log('gerando novo estabelecimento');
+      _id = Uuid()
+          .v5(Uuid.NAMESPACE_URL, 'br.com.organizafila.organiza_fila_admin');
+      widget.estabelecimento.id = _id;
+      widget.estabelecimento.fila = List(0);
+      widget.estabelecimento.mesa = List(0);
+      widget.estabelecimento.pessoasNaFila = 0;
+      widget.estabelecimento.mesasDisponiveis = _mesas;
+    }
+
+    widget.estabelecimento.nome = _nome;
+    widget.estabelecimento.sobre = _sobre;
+    widget.estabelecimento.mesas = _mesas;
+    widget.estabelecimento.aberto = _aberto;
+
+    log('o vivente pregou o dedo no SALVAR');
+    Navigator.of(context).pop(widget.estabelecimento);
   }
 
   void _cancelForm() {
     log('o vivente pregou o dedo no CANCELAR');
-    Navigator.of(context).pop(false);
+    Navigator.of(context).pop();
+  }
+
+  bool _checkModified() {
+    var o = widget.estabelecimento;
+    return o.id != _id ||
+        o.nome != _nome ||
+        o.sobre != _sobre ||
+        o.mesas != o.mesas;
   }
 
   Future<bool> _onBackPressed() {
-    return showDialog(
-          context: context,
-          builder: (context) => new AlertDialog(
-            title: new Text('Tem certeza?'),
-            content: new Text('Alterações serão descartadas. Confirma?'),
-            actions: [
-              FlatButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                  icon: Icon(Icons.cancel_rounded),
-                  label: Text('Não')),
-              FlatButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop(true);
-                  },
-                  icon: Icon(Icons.check_circle),
-                  label: Text('Descartar'))
-            ],
-          ),
-        ) ??
-        false;
+    if (_checkModified()) {
+      return showDialog(
+        context: context,
+        builder: (context) =>
+        new AlertDialog(
+          title: new Text('Tem certeza?'),
+          content: new Text('Alterações serão descartadas. Confirma?'),
+          actions: [
+            FlatButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+                icon: Icon(Icons.cancel_rounded),
+                label: Text('Não')),
+            FlatButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+                icon: Icon(Icons.check_circle),
+                label: Text('Descartar'))
+          ],
+        ),
+      ) ??
+          false;
+    } else {
+      return Future.value(true);
+    }
   }
 }

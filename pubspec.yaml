@@ -20,7 +20,10 @@ dependencies:
   firebase_core: 0.5.2
   firebase_storage: 5.0.1
   firebase_database: 4.3.0
+  uuid: 2.2.2
+
   cupertino_icons: ^1.0.0
+
 
 dev_dependencies:
   flutter_test:
