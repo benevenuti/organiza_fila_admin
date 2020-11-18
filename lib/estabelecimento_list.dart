@@ -46,7 +46,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     _empresasRef.keepSynced(true);
 
     _empresasSubscription = _empresasRef.onValue.listen((Event event) {
-      log('ouvido => ${event.snapshot.value}');
+      log('uma perturbação na força indicou mudança nos dados...');
       var it = event.snapshot.value as Map<dynamic, dynamic>;
       var il = it.values.map((e) => Estabelecimento.fromJson(e)).toList();
 
@@ -332,13 +332,27 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           );
 
           if (confirmacao) {
-            var msg = 'deletou ${item.nome}, haha SQN';
-            log(msg);
-            _showSnackBar(context, msg);
+            _deleteEstabelecimento(item);
           }
         },
       ),
     );
+  }
+
+  void _deleteEstabelecimento(Estabelecimento item) {
+    var f =
+        _empresasRef.orderByChild('id').equalTo(item.id).once().then((value) {
+      // log('chave ${value.key}');
+      // log('valor ${value.value}');
+
+      (value.value as Map<dynamic, dynamic>).forEach((key, value) {
+        _empresasRef
+            .child('$key')
+            .remove()
+            .then((value) => log('remove retornou ok'))
+            .catchError((error) => log('remove retornou $error'));
+      });
+    });
   }
 
   void _showSnackBar(BuildContext context, String text) {

@@ -401,7 +401,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       // imagem de fundo
       Center(
         child:
-        _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
+            _imgBg != null ? _renderImagemBg() : _renderImagemBgPlaceholder(),
       ),
       // ícones para a imagem de fundo
       Opacity(
@@ -722,14 +722,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             .equalTo(item.id)
             .once()
             .then((value) {
-          //var m = value.value as Map<dynamic, dynamic>;
-          log('chave ${value.key}');
-          log('valor ${value.value}');
-
           (value.value as Map<dynamic, dynamic>).forEach((key, value) {
-            var m = {
-              '$key': itemMap
-            };
+            var m = {'$key': itemMap};
             _empresasRef.update(m);
           });
         });
