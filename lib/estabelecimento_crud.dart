@@ -487,54 +487,54 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         opacity: 0.5,
         child: Center(
             child: Column(children: [
-              SizedBox(
-                height: 22,
-              ),
-              IconButton(
-                tooltip: 'Alterar imagem de avatar',
-                icon: Icon(Icons.camera_alt),
-                iconSize: 20,
-                //splashRadius: 30,
-                onPressed: () {
-                  _showImgPickerDlg(context).then((value) {
-                    log('recebi $value');
-                    var img;
-                    if (value != null) {
-                      img = Image.file(value,
-                          width: 100, height: 100, fit: BoxFit.cover);
-                    }
+          SizedBox(
+            height: 22,
+          ),
+          IconButton(
+            tooltip: 'Alterar imagem de avatar',
+            icon: Icon(Icons.camera_alt),
+            iconSize: 20,
+            //splashRadius: 30,
+            onPressed: () {
+              _showImgPickerDlg(context).then((value) {
+                log('recebi $value');
+                var img;
+                if (value != null) {
+                  img = Image.file(value,
+                      width: 100, height: 100, fit: BoxFit.cover);
+                }
+                setState(() {
+                  _imgPr = img;
+                  _imgPrLocal = value.path;
+                });
+              });
+            },
+          ),
+          SizedBox(
+            height: 32,
+          ),
+          IconButton(
+            tooltip: 'Remover imagem de avatar',
+            icon: Icon(Icons.image_not_supported),
+            iconSize: 20,
+            //splashRadius: 30,
+            onPressed: () {
+              if (_imgPr != null) {
+                _confirmImageClear(context).then((value) {
+                  if (value) {
                     setState(() {
-                      _imgPr = img;
-                      _imgPrLocal = value.path;
+                      _imgPr = null;
+                      _imgPrLocal = null;
                     });
-                  });
-                },
-              ),
-              SizedBox(
-                height: 32,
-              ),
-              IconButton(
-                tooltip: 'Remover imagem de avatar',
-                icon: Icon(Icons.image_not_supported),
-                iconSize: 20,
-                //splashRadius: 30,
-                onPressed: () {
-                  if (_imgPr != null) {
-                    _confirmImageClear(context).then((value) {
-                      if (value) {
-                        setState(() {
-                          _imgPr = null;
-                          _imgPrLocal = null;
-                        });
-                      }
-                    });
-                  } else {
-                    log('sem imagem de avatar para limpar');
-                    SystemSound.play(SystemSoundType.click);
                   }
-                },
-              ),
-            ])),
+                });
+              } else {
+                log('sem imagem de avatar para limpar');
+                SystemSound.play(SystemSoundType.click);
+              }
+            },
+          ),
+        ])),
       ),
     ]);
   }
@@ -711,28 +711,31 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   Future<void> _update(BuildContext context, Estabelecimento item) async {
     if (item == null) {
       log('o vivente não salvou');
-    }
-    try {
-      if (item.isNew) {
-        await _empresasRef.push().update(item.toMapPush());
-      } else {
-        _empresasRef.update(item.toMapUpdate());
+    } else {
+      try {
+        if (item.isNew) {
+          await _empresasRef.push().update(item.toMapPush());
+        } else {
+          var json = item.toMapUpdate();
+          log('vai salvar $json');
+          await _empresasRef.update(json);
+        }
+        if (item.imagemprLocal != null) {
+          await _uploadFile(item.imagemprLocal, item.imagempr);
+        }
+        if (item.imagembgLocal != null) {
+          await _uploadFile(item.imagembgLocal, item.imagembg);
+        }
+        _showSnackBar(context, 'Estabelecimento salvo.');
+      } on Exception catch (e) {
+        var msg = 'Erro ao salvar o estabelcimento: $e';
+        _showSnackBar(context, msg);
       }
-      if (item.imagemprLocal != null) {
-        await _uploadFile(item.imagemprLocal, item.imagempr);
-      }
-      if (item.imagembgLocal != null) {
-        await _uploadFile(item.imagembgLocal, item.imagembg);
-      }
-      _showSnackBar(context, 'Estabelecimento salvo.');
-    } on Exception catch (e) {
-      var msg = 'Erro ao salvar o estabelcimento: $e';
-      _showSnackBar(context, msg);
-    }
 
-    setState(() {
-      _saving = false;
-    });
+      setState(() {
+        _saving = false;
+      });
+    }
   }
 
   Future<void> _uploadFile(String localFile, String remoteFile) async {

@@ -60,7 +60,7 @@ class Estabelecimento {
     var mesasDisponiveis = mesas - mesa.length;
 
     return Estabelecimento.builder(
-      key,
+      '$key',
       json['id'],
       json['nome'] as String,
       json['imagembg'] as String,
@@ -83,20 +83,20 @@ class Estabelecimento {
       'imagempr': this.imagempr,
       'aberto': this.aberto,
       'mesas': this.mesas,
-      'mesasDisponiveis': this.mesasDisponiveis,
+      //'mesasDisponiveis': this.mesasDisponiveis,
       'sobre': this.sobre,
-      'pessoasNaFila': this.pessoasNaFila,
+      //'pessoasNaFila': this.pessoasNaFila,
       'mesa': this.mesa,
       'fila': this.fila
     };
   }
 
-  Map<String, dynamic> toMapPush() {
-    return {'$this.key': toJson()};
+  Map<String, dynamic> toMapUpdate() {
+    return {'${this.key}': toJson()};
   }
 
-  Map<dynamic, dynamic> toMapUpdate() {
-    return toJson().cast<dynamic, dynamic>();
+  Map<dynamic, dynamic> toMapPush() {
+    return toJson();
   }
 
   @override
