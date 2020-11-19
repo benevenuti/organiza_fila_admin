@@ -1,8 +1,14 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:organiza_fila_admin/cliente_fila.dart';
+
+import 'mesa.dart';
 
 class Estabelecimento {
   dynamic id;
+  dynamic key;
   String nome;
   String imagembg;
   String imagembgUrl;
@@ -19,14 +25,15 @@ class Estabelecimento {
   int mesasDisponiveis;
   String sobre;
   int pessoasNaFila;
-  List<dynamic> mesa;
-  List<dynamic> fila;
+  List<Mesa> mesa;
+  List<ClienteFila> fila;
 
   bool isNew = false;
 
   Estabelecimento();
 
   Estabelecimento.builder(
+      this.key,
       this.id,
       this.nome,
       this.imagembg,
@@ -39,8 +46,17 @@ class Estabelecimento {
       this.mesa,
       this.fila);
 
-  factory Estabelecimento.fromJson(dynamic json) {
+  factory Estabelecimento.fromJson(dynamic key, dynamic json) {
+    log('converter k: $key');
+    log('converter v: $json');
+    var mesa = List.from(json['mesa'], growable: true);
+    mesa.removeWhere((element) => element == null);
+    mesa = mesa.map((e) => Mesa.fromJson(e)).toList();
+    var fila =
+        (json['fila'] as List).map((e) => ClienteFila.fromJson(e)).toList();
+
     return Estabelecimento.builder(
+      key,
       json['id'],
       json['nome'] as String,
       json['imagembg'] as String,
@@ -49,13 +65,13 @@ class Estabelecimento {
       json['mesas'] as int,
       json['mesasDisponiveis'] as int,
       json['sobre'] as String,
-      json['pessoasNaFila'] as int,
-      json['mesa'] as List<dynamic>,
-      json['fila'] as List<dynamic>,
+      fila.length,
+      mesa,
+      fila,
     );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMapPush() {
     return {
       'id': this.id,
       'nome': this.nome,
@@ -69,5 +85,22 @@ class Estabelecimento {
       'mesa': this.mesa,
       'fila': this.fila
     };
+  }
+
+  Map<dynamic, dynamic> toMapUpdate() {
+    return { '$this.key':
+    {
+      'id': this.id,
+      'nome': this.nome,
+      'imagembg': this.imagembg,
+      'imagempr': this.imagempr,
+      'aberto': this.aberto,
+      'mesas': this.mesas,
+      'mesasDisponiveis': this.mesasDisponiveis,
+      'sobre': this.sobre,
+      'pessoasNaFila': this.pessoasNaFila,
+      'mesa': this.mesa,
+      'fila': this.fila
+    }};
   }
 }

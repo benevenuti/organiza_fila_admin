@@ -713,20 +713,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       log('o vivente não salvou');
     }
     try {
-      var itemMap = item.toMap();
       if (item.isNew) {
-        await _empresasRef.push().update(itemMap);
+        await _empresasRef.push().update(item.toMapPush());
       } else {
-        var f = _empresasRef
-            .orderByChild('id')
-            .equalTo(item.id)
-            .once()
-            .then((value) {
-          (value.value as Map<dynamic, dynamic>).forEach((key, value) {
-            var m = {'$key': itemMap};
-            _empresasRef.update(m);
-          });
-        });
+        _empresasRef.update(item.toMapUpdate());
       }
       if (item.imagemprLocal != null) {
         await _uploadFile(item.imagemprLocal, item.imagempr);

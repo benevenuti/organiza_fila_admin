@@ -8,6 +8,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:organiza_fila_admin/estabelecimento.dart';
 import 'package:organiza_fila_admin/estabelecimento_crud.dart';
 
+import 'cliente_fila.dart';
 import 'content_list_item.dart';
 
 class EstabelecimentoList extends StatefulWidget {
@@ -48,7 +49,10 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     _empresasSubscription = _empresasRef.onValue.listen((Event event) {
       log('uma perturbação na força indicou mudança nos dados...');
       var it = event.snapshot.value as Map<dynamic, dynamic>;
-      var il = it.values.map((e) => Estabelecimento.fromJson(e)).toList();
+      var il = List<Estabelecimento>();
+      it.forEach((k, v) {
+        il.add(Estabelecimento.fromJson(k, v));
+      });
 
       setState(() {
         _error = null;
@@ -126,56 +130,58 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: IconSlideAction(
-        caption: 'Próximo da Fila',
-        color: Colors.deepOrange[900],
-        icon: Icons.emoji_people,
-        onTap: () async {
-          // se estiver fechado
-          if (!item.aberto &&
-              (item.pessoasNaFila == null || item.pessoasNaFila < 1)) {
-            _showSnackBar(context, 'O estabelecimento está fechado.');
-          } else if (item.aberto && item.pessoasNaFila == null ||
-              item.pessoasNaFila < 1) {
-            _showSnackBar(
-                context, 'O estabelecimento não tem clientes na fila.');
-          } else if (item.pessoasNaFila != null || item.pessoasNaFila > 0) {
-            String proximoId = await _buscaProximoCliente(context, item);
-            var confirmacao = await showDialog<bool>(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: Text('Próximooo!'),
-                  content:
-                      Text('Vou chamar o próximo e ocupar uma mesa. Confirma?'),
-                  actions: <Widget>[
-                    FlatButton(
-                      child: Text('Cancelar'),
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                    FlatButton(
-                      child: Text(
-                        'PRÓXIMO',
-                        style: TextStyle(
-                            //color: Colors.deepOrange,
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
-                  ],
-                );
-              },
-            );
-
-            if (confirmacao) {
-              var msg = 'chamou o cliente $proximoId';
-              log(msg);
-              _showSnackBar(context, msg);
-            }
-          }
-        },
-      ),
+          caption: 'Próximo da Fila',
+          color: Colors.deepOrange[900],
+          icon: Icons.emoji_people,
+          onTap: () => _onTapProximoAction(context, item)),
     );
+  }
+
+  void _onTapProximoAction(BuildContext context, Estabelecimento item) async {
+    // se estiver fechado
+    if (!item.aberto &&
+        (item.pessoasNaFila == null || item.pessoasNaFila < 1)) {
+      _showSnackBar(context, 'O estabelecimento está fechado.');
+    } else if (item.aberto && item.pessoasNaFila == null ||
+        item.pessoasNaFila < 1) {
+      _showSnackBar(context, 'O estabelecimento não tem clientes na fila.');
+    } else if (item.pessoasNaFila != null || item.pessoasNaFila > 0) {
+      ClienteFila cliente = item.fila[0];
+      log('o próximo da fila é o cliente ${cliente.idpessoa}');
+
+      var confirmacao = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Próximooo!'),
+            content: Text('Vou chamar o próximo e ocupar uma mesa. Confirma?'),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Cancelar'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              FlatButton(
+                child: Text(
+                  'PRÓXIMO',
+                  style: TextStyle(
+                    //color: Colors.deepOrange,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmacao) {
+        var msg = 'vou chamar o cliente ${cliente.idpessoa}';
+        log(msg);
+        _showSnackBar(context, msg);
+        Future.value('${cliente.idpessoa}');
+      }
+    }
   }
 
   Widget _buildActionLiberar(BuildContext context, Estabelecimento item) {
@@ -196,11 +202,13 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           } else if (mesasOcupadas == 0) {
             _showSnackBar(context, 'Não há mesas ocupadas.');
           } else if (mesasOcupadas > 0) {
-            String proximoId = await _buscaProximoCliente(context, item);
+            ClienteFila cliente = item.fila[0];
+            log('o próximo da fila é o cliente ${cliente.idpessoa}');
+
             String text = '';
-            if (proximoId != null) {
+            if (cliente != null) {
               text +=
-                  'É possível liberar uma mesa e, também, chamar o próximo cliente.';
+              'É possível liberar uma mesa e, também, chamar o próximo cliente.';
             }
 
             var confirmacao = await showDialog<int>(
@@ -218,23 +226,23 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                       child: Text(
                         'SIM',
                         style: TextStyle(
-                            //color: Colors.deepOrange,
-                            //letterSpacing: 1.5,
+                          //color: Colors.deepOrange,
+                          //letterSpacing: 1.5,
                             fontWeight: FontWeight.bold),
                       ),
                       onPressed: () => Navigator.of(context).pop(1),
                     ),
-                    proximoId != null
+                    cliente != null
                         ? FlatButton(
-                            child: Text(
-                              'SIM/CHAMAR',
-                              style: TextStyle(
-                                  //color: Colors.deepOrange,
-                                  //letterSpacing: 1.5,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            onPressed: () => Navigator.of(context).pop(2),
-                          )
+                      child: Text(
+                        'SIM/CHAMAR',
+                        style: TextStyle(
+                          //color: Colors.deepOrange,
+                          //letterSpacing: 1.5,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(2),
+                    )
                         : SizedBox(),
                   ],
                 );
@@ -245,10 +253,18 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
               var msg = 'liberou uma mesa';
               log(msg);
               _showSnackBar(context, msg);
+
+              // dispara acao no firebase
+              await _liberarMesa(context, item);
             } else if (confirmacao == 2) {
-              var msg = 'liberou e chamou o cliente $proximoId';
+              var msg = 'liberou e chamou o cliente ${cliente.idpessoa}';
               log(msg);
               _showSnackBar(context, msg);
+
+              // dispara acao no firebase e no then dispara outra
+              _liberarMesa(context, item).then((value) {
+                log('aqui chama o proximo cliente');
+              });
             }
           }
         },
@@ -321,7 +337,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                     child: Text(
                       'DELETAR',
                       style: TextStyle(
-                          //color: Colors.red[300],
+                        //color: Colors.red[300],
                           letterSpacing: 1.5),
                     ),
                     onPressed: () => Navigator.of(context).pop(true),
@@ -340,11 +356,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   }
 
   void _deleteEstabelecimento(Estabelecimento item) {
-    var f =
-        _empresasRef.orderByChild('id').equalTo(item.id).once().then((value) {
-      // log('chave ${value.key}');
-      // log('valor ${value.value}');
-
+    _empresasRef.orderByChild('id').equalTo(item.id).once().then((value) {
       (value.value as Map<dynamic, dynamic>).forEach((key, value) {
         _empresasRef
             .child('$key')
@@ -359,8 +371,20 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  Future<String> _buscaProximoCliente(
-      BuildContext context, Estabelecimento item) async {
-    return Future.value('Sagüi dourado');
+  Future<bool> _liberarMesa(BuildContext context, Estabelecimento item) async {
+    // remove a primeira mesa
+    item.mesa.removeAt(0);
+
+    // monta a lista de mesas em json
+    var mesa = List<dynamic>();
+    item.mesa.forEach((element) {
+      mesa.add(element.toJson());
+    });
+
+    // larga um set na mesa
+    _empresasRef.child(item.key).child('mesa').set(mesa).then((_) =>
+        log('set em mesa: ok')).catchError((error) =>
+        log('set em mesa: $error'));
   }
+
 }
