@@ -703,7 +703,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return o.id != _id ||
         o.nome != _nome ||
         o.sobre != _sobre ||
-        o.mesas != _mesas ||
+        o.mesas != int.parse('0' + _mesas) ||
         o.imagembg != _imagembg ||
         o.imagempr != _imagempr;
   }
@@ -714,29 +714,17 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     } else {
       try {
         if (item.isNew) {
+          // para melhor compreensão useu push() e set() para novos registros
           await _empresasRef.push().set(item.toMapPush());
         } else {
-          // // monta a lista de mesas em json
-          // var mesa = List<dynamic>();
-          // item.mesa.forEach((element) {
-          //   mesa.add(element.toJson());
-          // });
-          //
-          // // larga um set na mesa
-          // _empresasRef.child(item.key).child('mesa').set(mesa).then((_) =>
-          //     log('set em mesa: ok')).catchError((error) =>
-          //     log('set em mesa: $error'));
-          //
-
+          // e para update, usei child(key) com update()
           await _empresasRef.child(item.key).update(item.toMapPush());
-
-          // var json = item.toMapUpdate();
-          // log('vai salvar $json');
-          // await _empresasRef.update(json);
         }
+        // independentemente controla a imagem pr, se trocou
         if (item.imagemprLocal != null) {
           await _uploadFile(item.imagemprLocal, item.imagempr);
         }
+        // independentemente controla a imagem bg, se trocou
         if (item.imagembgLocal != null) {
           await _uploadFile(item.imagembgLocal, item.imagembg);
         }
