@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -10,6 +11,7 @@ import 'package:organiza_fila_admin/estabelecimento_crud.dart';
 
 import 'cliente_fila.dart';
 import 'content_list_item.dart';
+import 'mesa.dart';
 
 class EstabelecimentoList extends StatefulWidget {
   final FirebaseApp firebase;
@@ -47,7 +49,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     _empresasRef.keepSynced(true);
 
     _empresasSubscription = _empresasRef.onValue.listen((Event event) {
-      log('uma perturbação na força indicou mudança nos dados...');
+      log('sinto uma perturbação na Força...');
       var it = event.snapshot.value as Map<dynamic, dynamic>;
       var il = List<Estabelecimento>();
       it.forEach((k, v) {
@@ -58,9 +60,11 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         _error = null;
         items = il;
       });
+
+      log('que a Força esteja com você');
     }, onError: (Object o) {
       final DatabaseError error = o;
-      log('erro ao ouvir => $error');
+      log('lado escuro da Força... => $error');
 
       setState(() {
         _error = error;
@@ -76,7 +80,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
 
   @override
   Widget build(BuildContext context) {
-    log('list build');
+    log('build EstabelecimentoList');
     return Scaffold(
       appBar: AppBar(
         //backgroundColor: Colors.grey[850],
@@ -177,9 +181,9 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
 
       if (confirmacao) {
         var msg = 'vou chamar o cliente ${cliente.idpessoa}';
-        log(msg);
-        _showSnackBar(context, msg);
-        Future.value('${cliente.idpessoa}');
+        _chamarProximo(context, item).then((value) {
+          _ocupaMesa(context, item, value);
+        });
       }
     }
   }
@@ -208,7 +212,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
             String text = '';
             if (cliente != null) {
               text +=
-              'É possível liberar uma mesa e, também, chamar o próximo cliente.';
+                  'É possível liberar uma mesa e, também, chamar o próximo cliente.';
             }
 
             var confirmacao = await showDialog<int>(
@@ -262,8 +266,13 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
               _showSnackBar(context, msg);
 
               // dispara acao no firebase e no then dispara outra
+              log('aqui libera a mesa');
               _liberarMesa(context, item).then((value) {
                 log('aqui chama o proximo cliente');
+                _chamarProximo(context, item).then((value) {
+                  log('aqui o proximo cliente ocupa a mesa');
+                  _ocupaMesa(context, item, value);
+                });
               });
             }
           }
@@ -378,15 +387,57 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     item.mesa.removeAt(0);
 
     // monta a lista de mesas em json
+    return await _atualizaMesa(item);
+  }
+
+  Future<ClienteFila> _chamarProximo(BuildContext context,
+      Estabelecimento item) async {
+    log('lista fila ${item.fila}');
+
+    // remove o primeiro cliente
+    var cliente = item.fila.removeAt(0);
+
+    // monta a lista da fila em json
+    var fila = List<dynamic>();
+    item.fila.forEach((element) {
+      fila.add(element.toJson());
+    });
+
+    // larga um set na fila
+    try {
+      await _empresasRef.child(item.key).child('fila').set(fila);
+      // retorna o cliente que saiu
+      return Future.value(cliente);
+    } on Exception catch (e) {
+      log('erro ao chamar set em fila: $e');
+      return Future.value(null);
+    }
+  }
+
+  Future<bool> _ocupaMesa(BuildContext context, Estabelecimento item,
+      ClienteFila cliente) async {
+    log('lista mesa ${item.mesa}');
+
+    // poe o cliente no fim
+    item.mesa.add(Mesa.builder(cliente.index, cliente.idpessoa));
+
+    // monta a lista de mesas em json
+    return await _atualizaMesa(item);
+  }
+
+  _atualizaMesa(Estabelecimento item) async {
     var mesa = List<dynamic>();
     item.mesa.forEach((element) {
       mesa.add(element.toJson());
     });
 
     // larga um set na mesa
-    _empresasRef.child(item.key).child('mesa').set(mesa).then((_) =>
-        log('set em mesa: ok')).catchError((error) =>
-        log('set em mesa: $error'));
+    try {
+      await _empresasRef.child(item.key).child('mesa').set(mesa);
+      return Future.value(true);
+    } on Exception catch (e) {
+      log('erro ao chamar set em mesa: $e');
+      return Future.value(false);
+    }
   }
-
 }

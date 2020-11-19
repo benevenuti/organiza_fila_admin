@@ -35,7 +35,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   String _imagembgUrl;
   String _imagemprUrl;
   bool _aberto = true;
-  String _mesas = '0';
+  String _mesas;
   String _sobre;
 
   // aux
@@ -80,7 +80,6 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   @override
   bool get mounted {
     var m = super.mounted;
-    log('get mounted = $m');
     return m;
   }
 
@@ -131,7 +130,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
 
   @override
   Widget build(BuildContext context) {
-    log('crud build');
+    log('build EstabelecimentoCrud');
     return WillPopScope(
       onWillPop: _onBackPressed,
       child: Scaffold(
@@ -375,7 +374,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                       title: new Text('Galeria'),
                       onTap: () async {
                         var f = await _getImg(context, ImageSource.gallery);
-                        log('retornando $f');
+                        log('retornando $f do picker');
                         Navigator.of(context).pop(f);
                       }),
                   new ListTile(
@@ -383,7 +382,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                     title: new Text('Câmera'),
                     onTap: () async {
                       var f = await _getImg(context, ImageSource.camera);
-                      log('retornando $f');
+                      log('retornando $f do picker');
                       Navigator.of(context).pop(f);
                     },
                   ),
@@ -418,7 +417,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
                   splashRadius: 20,
                   onPressed: () {
                     _showImgPickerDlg(context).then((value) {
-                      log('recebi $value');
+                      log('recebi $value como image path');
                       var img;
                       if (value != null) {
                         img = Image.file(value,
@@ -497,7 +496,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
             //splashRadius: 30,
             onPressed: () {
               _showImgPickerDlg(context).then((value) {
-                log('recebi $value');
+                log('recebi $value como image path');
                 var img;
                 if (value != null) {
                   img = Image.file(value,
@@ -596,8 +595,8 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   Widget _buildFieldSobre() {
     return TextFormField(
       style: TextStyle(
-        //backgroundColor: Colors.grey[850]
-      ),
+          //backgroundColor: Colors.grey[850]
+          ),
       keyboardType: TextInputType.multiline,
       maxLength: 300,
       minLines: 1,
@@ -640,7 +639,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   }
 
   void _saveForm(BuildContext context) async {
-    log('o vivente pregou o dedo no SALVAR');
+    log('geremos uma perturbação na Força ao SALVAR');
     if (_saving) {
       return;
     }
@@ -665,10 +664,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       _id = Uuid()
           .v5(Uuid.NAMESPACE_URL, 'br.com.organizafila.organiza_fila_admin');
       widget.estabelecimento.id = _id;
-      widget.estabelecimento.fila = List(0);
-      widget.estabelecimento.mesa = List(0);
-      widget.estabelecimento.pessoasNaFila = 0;
-      widget.estabelecimento.mesasDisponiveis = int.parse('0' + _mesas);
+      // widget.estabelecimento.fila = List(0);
+      // widget.estabelecimento.mesa = List(0);
+      // widget.estabelecimento.pessoasNaFila = 0;
+      // widget.estabelecimento.mesasDisponiveis = int.parse('0' + _mesas);
       widget.estabelecimento.isNew = true;
     }
 
@@ -694,7 +693,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   }
 
   void _cancelForm() {
-    log('o vivente pregou o dedo no CANCELAR');
+    log('evitemos uma perturbação na Força ao CANCELAR');
     Navigator.of(context).pop();
   }
 
@@ -703,14 +702,14 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     return o.id != _id ||
         o.nome != _nome ||
         o.sobre != _sobre ||
-        o.mesas != int.parse('0' + _mesas) ||
+        (o.mesas ?? 0) != int.parse('0' + _mesas) ||
         o.imagembg != _imagembg ||
         o.imagempr != _imagempr;
   }
 
   Future<void> _update(BuildContext context, Estabelecimento item) async {
     if (item == null) {
-      log('o vivente não salvou');
+      log('a Força não foi afetada');
     } else {
       try {
         if (item.isNew) {
@@ -728,10 +727,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         if (item.imagembgLocal != null) {
           await _uploadFile(item.imagembgLocal, item.imagembg);
         }
-        _showSnackBar(context, 'Estabelecimento salvo.');
+        log('Estabelecimento salvo.');
       } on Exception catch (e) {
         var msg = 'Erro ao salvar o estabelcimento: $e';
-        _showSnackBar(context, msg);
+        log(msg);
       }
 
       setState(() {
@@ -747,7 +746,6 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     } on FirebaseException catch (e) {
       var msg = 'erro ao subir $localFile -> $remoteFile';
       log(msg);
-      _showSnackBar(context, msg);
     }
   }
 
@@ -779,10 +777,5 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     } else {
       return Future.value(true);
     }
-  }
-
-  void _showSnackBar(BuildContext context, String text) {
-    //Scaffold.of(context).showSnackBar(SnackBar(content: Text(text)));
-    log(text);
   }
 }
