@@ -86,8 +86,8 @@ class Estabelecimento {
       //'mesasDisponiveis': this.mesasDisponiveis,
       'sobre': this.sobre,
       //'pessoasNaFila': this.pessoasNaFila,
-      'mesa': this.mesa,
-      'fila': this.fila
+      //'mesa': this.mesa,
+      //'fila': this.fila
     };
   }
 
@@ -95,7 +95,7 @@ class Estabelecimento {
     return {'${this.key}': toJson()};
   }
 
-  Map<dynamic, dynamic> toMapPush() {
+  Map<String, dynamic> toMapPush() {
     return toJson();
   }
 

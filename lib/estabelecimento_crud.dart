@@ -35,7 +35,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
   String _imagembgUrl;
   String _imagemprUrl;
   bool _aberto = true;
-  int _mesas = 0;
+  String _mesas = '0';
   String _sobre;
 
   // aux
@@ -59,7 +59,7 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     _id = widget.estabelecimento.id;
     _nome = widget.estabelecimento.nome;
     _sobre = widget.estabelecimento.sobre;
-    _mesas = widget.estabelecimento.mesas ?? 0;
+    _mesas = '${widget.estabelecimento.mesas ?? 0}';
     _aberto = widget.estabelecimento.aberto == true;
 
     _imagembg = widget.estabelecimento.imagembg;
@@ -584,10 +584,10 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       maxLength: 3,
       decoration: InputDecoration(
           hintText: 'Mesas no estabelecimento', icon: Icon(Icons.event_seat)),
-      initialValue: _mesas > 0 ? '$_mesas' : null,
+      initialValue: _mesas,
       onChanged: (value) {
         setState(() {
-          _mesas = value as int;
+          _mesas = value;
         });
       },
     );
@@ -668,13 +668,13 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       widget.estabelecimento.fila = List(0);
       widget.estabelecimento.mesa = List(0);
       widget.estabelecimento.pessoasNaFila = 0;
-      widget.estabelecimento.mesasDisponiveis = _mesas;
+      widget.estabelecimento.mesasDisponiveis = int.parse('0' + _mesas);
       widget.estabelecimento.isNew = true;
     }
 
     widget.estabelecimento.nome = _nome;
     widget.estabelecimento.sobre = _sobre;
-    widget.estabelecimento.mesas = _mesas;
+    widget.estabelecimento.mesas = int.parse('0' + _mesas);
     widget.estabelecimento.aberto = _aberto;
 
     DateFormat dateFormat = DateFormat("yyyyMMdd_HHmmss");
@@ -714,11 +714,25 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
     } else {
       try {
         if (item.isNew) {
-          await _empresasRef.push().update(item.toMapPush());
+          await _empresasRef.push().set(item.toMapPush());
         } else {
-          var json = item.toMapUpdate();
-          log('vai salvar $json');
-          await _empresasRef.update(json);
+          // // monta a lista de mesas em json
+          // var mesa = List<dynamic>();
+          // item.mesa.forEach((element) {
+          //   mesa.add(element.toJson());
+          // });
+          //
+          // // larga um set na mesa
+          // _empresasRef.child(item.key).child('mesa').set(mesa).then((_) =>
+          //     log('set em mesa: ok')).catchError((error) =>
+          //     log('set em mesa: $error'));
+          //
+
+          await _empresasRef.child(item.key).update(item.toMapPush());
+
+          // var json = item.toMapUpdate();
+          // log('vai salvar $json');
+          // await _empresasRef.update(json);
         }
         if (item.imagemprLocal != null) {
           await _uploadFile(item.imagemprLocal, item.imagempr);

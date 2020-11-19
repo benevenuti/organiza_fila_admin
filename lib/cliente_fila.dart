@@ -1,13 +1,13 @@
 class ClienteFila {
-  dynamic idpessoa;
   dynamic index;
+  dynamic idpessoa;
 
   ClienteFila();
 
-  ClienteFila.builder(this.idpessoa, this.index);
+  ClienteFila.builder(this.index, this.idpessoa);
 
   factory ClienteFila.fromJson(dynamic json) {
-    return ClienteFila.builder(json['idpessoa'], json['index']);
+    return ClienteFila.builder(json['index'] ?? 1, json['idpessoa']);
   }
 
   Map<String, dynamic> toJson() => {
