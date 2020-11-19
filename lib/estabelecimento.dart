@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:organiza_fila_admin/cliente_fila.dart';
@@ -47,13 +45,19 @@ class Estabelecimento {
       this.fila);
 
   factory Estabelecimento.fromJson(dynamic key, dynamic json) {
-    log('converter k: $key');
-    log('converter v: $json');
-    var mesa = List.from(json['mesa'], growable: true);
+    // log('converter k: $key');
+    // log('converter v: $json');
+
+    var mesa = List.from(json['mesa'] ?? [], growable: true);
     mesa.removeWhere((element) => element == null);
     mesa = mesa.map((e) => Mesa.fromJson(e)).toList();
-    var fila =
-        (json['fila'] as List).map((e) => ClienteFila.fromJson(e)).toList();
+
+    var fila = List.from(json['fila'] ?? [], growable: true);
+    fila.removeWhere((element) => element == null);
+    fila = fila.map((e) => ClienteFila.fromJson(e)).toList();
+
+    var mesas = (json['mesas'] as int) ?? 0;
+    var mesasDisponiveis = mesas - mesa.length;
 
     return Estabelecimento.builder(
       key,
@@ -62,8 +66,8 @@ class Estabelecimento {
       json['imagembg'] as String,
       json['imagempr'] as String,
       json['aberto'] as bool,
-      json['mesas'] as int,
-      json['mesasDisponiveis'] as int,
+      mesas,
+      mesasDisponiveis,
       json['sobre'] as String,
       fila.length,
       mesa,
@@ -71,7 +75,7 @@ class Estabelecimento {
     );
   }
 
-  Map<String, dynamic> toMapPush() {
+  Map<String, dynamic> toJson() {
     return {
       'id': this.id,
       'nome': this.nome,
@@ -87,20 +91,16 @@ class Estabelecimento {
     };
   }
 
+  Map<String, dynamic> toMapPush() {
+    return {'$this.key': toJson()};
+  }
+
   Map<dynamic, dynamic> toMapUpdate() {
-    return { '$this.key':
-    {
-      'id': this.id,
-      'nome': this.nome,
-      'imagembg': this.imagembg,
-      'imagempr': this.imagempr,
-      'aberto': this.aberto,
-      'mesas': this.mesas,
-      'mesasDisponiveis': this.mesasDisponiveis,
-      'sobre': this.sobre,
-      'pessoasNaFila': this.pessoasNaFila,
-      'mesa': this.mesa,
-      'fila': this.fila
-    }};
+    return toJson().cast<dynamic, dynamic>();
+  }
+
+  @override
+  String toString() {
+    return toJson().toString();
   }
 }

@@ -372,6 +372,8 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   }
 
   Future<bool> _liberarMesa(BuildContext context, Estabelecimento item) async {
+    log('lista mesa ${item.mesa}');
+
     // remove a primeira mesa
     item.mesa.removeAt(0);
 

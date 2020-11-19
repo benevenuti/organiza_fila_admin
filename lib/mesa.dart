@@ -14,4 +14,9 @@ class Mesa {
         'id': id,
         'idpessoa': idpessoa,
       };
+
+  @override
+  String toString() {
+    return toJson().toString();
+  }
 }
