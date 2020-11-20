@@ -4,7 +4,7 @@ import 'mysplash.dart';
 
 void main() {
   runApp(new MaterialApp(
-    theme: ThemeData.dark(),
+    theme: ThemeData.from(colorScheme: ColorScheme.dark()),
     home: new MySplash(),
   ));
 }

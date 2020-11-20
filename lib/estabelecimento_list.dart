@@ -26,11 +26,17 @@ class EstabelecimentoList extends StatefulWidget {
 
 class _EstabelecimentoListState extends State<EstabelecimentoList> {
   List<Estabelecimento> items = List.empty();
+  Map<String, dynamic> usuarios = Map();
+
   DatabaseError _error;
+  DatabaseError _errorU;
   String s = "Aguarde...";
 
   DatabaseReference _empresasRef;
   StreamSubscription<Event> _empresasSubscription;
+
+  DatabaseReference _usuariosRef;
+  StreamSubscription<Event> _usuariosSubscription;
 
   @override
   void initState() {
@@ -48,8 +54,11 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     _empresasRef = database.reference().child('empresas');
     _empresasRef.keepSynced(true);
 
+    _usuariosRef = database.reference().child('usuarios');
+    _usuariosRef.keepSynced(true);
+
     _empresasSubscription = _empresasRef.onValue.listen((Event event) {
-      log('sinto uma perturbação na Força...');
+      log('sinto uma perturbação na Força<empresas>...');
       var it = event.snapshot.value as Map<dynamic, dynamic>;
       var il = List<Estabelecimento>();
       it.forEach((k, v) {
@@ -61,13 +70,35 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         items = il;
       });
 
-      log('que a Força esteja com você');
+      log('que a Força esteja com você <empresas>');
     }, onError: (Object o) {
       final DatabaseError error = o;
-      log('lado escuro da Força... => $error');
+      log('lado escuro da Força<empresas>... => $error');
 
       setState(() {
         _error = error;
+      });
+    });
+
+    _usuariosSubscription = _usuariosRef.onValue.listen((Event event) {
+      log('sinto uma perturbação na Força<usuarios>');
+      var it = event.snapshot.value as Map<dynamic, dynamic>;
+      var il = it != null ? it.cast<String, dynamic>() : null;
+
+      log('usuarios: $il');
+
+      setState(() {
+        _error = null;
+        usuarios = il;
+      });
+
+      log('que a Força esteja com você<usuarios>');
+    }, onError: (Object o) {
+      final DatabaseError error = o;
+      log('lado escuro da Força<usuarios>... => $error');
+
+      setState(() {
+        _errorU = error;
       });
     });
   }
@@ -76,6 +107,7 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
   void dispose() {
     super.dispose();
     _empresasSubscription.cancel();
+    _usuariosSubscription.cancel();
   }
 
   @override
@@ -111,7 +143,13 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
                   },
                   itemCount: items.length,
                 )
-              : Text(_error != null ? _error : 'Que pena, nada por aqui :,(')),
+              : Column(
+                  children: [
+                    Text(_error != null ? _error : ''),
+                    Text(_errorU != null ? _errorU : ''),
+                    Text('Nada por aqui.'),
+                  ],
+                )),
       //backgroundColor: Colors.grey[600],
       floatingActionButton: _buildFabOpenContainer(),
     );
@@ -182,8 +220,8 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
 
       if (confirmacao) {
         var msg = 'vou chamar o cliente ${cliente.idpessoa}';
-        _chamarProximo(context, item).then((value) {
-          _ocupaMesa(context, item, value);
+        _chamarProximo(item).then((value) {
+          _ocupaMesa(item, value);
         });
       }
     }
@@ -273,9 +311,9 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
               log('aqui libera a mesa');
               _liberarMesa(context, item).then((value) {
                 log('aqui chama o proximo cliente');
-                _chamarProximo(context, item).then((value) {
+                _chamarProximo(item).then((value) {
                   log('aqui o proximo cliente ocupa a mesa');
-                  _ocupaMesa(context, item, value);
+                  _ocupaMesa(item, value);
                 });
               });
             }
@@ -374,8 +412,8 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         _empresasRef
             .child('$key')
             .remove()
-            .then((value) => log('remove retornou ok'))
-            .catchError((error) => log('remove retornou $error'));
+            .then((value) => log('remove estab retornou ok'))
+            .catchError((error) => log('remove estab retornou $error'));
       });
     });
   }
@@ -388,14 +426,23 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     log('lista mesa ${item.mesa}');
 
     // remove a primeira mesa
-    item.mesa.removeAt(0);
+    Mesa mesaLiberada = item.mesa.removeAt(0);
 
-    // monta a lista de mesas em json
+    await _desvinculaUser(mesaLiberada);
     return await _atualizaMesa(item);
   }
 
-  Future<ClienteFila> _chamarProximo(BuildContext context,
-      Estabelecimento item) async {
+  Future<bool> _desvinculaUser(Mesa mesaLiberada) async {
+    log('desvinculado cliente ${mesaLiberada.idpessoa}');
+    _usuariosRef.child(mesaLiberada.idpessoa).remove()
+        .then((value) =>
+        log('removeu o vinculo do cliente ${mesaLiberada.idpessoa}'))
+        .catchError((error) {
+      log('erro ao desvincular usuario ${mesaLiberada.idpessoa}: $error');
+    });
+  }
+
+  Future<ClienteFila> _chamarProximo(Estabelecimento item) async {
     log('lista fila ${item.fila}');
 
     // remove o primeiro cliente
@@ -418,12 +465,13 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     }
   }
 
-  Future<bool> _ocupaMesa(BuildContext context, Estabelecimento item,
-      ClienteFila cliente) async {
+  Future<bool> _ocupaMesa(Estabelecimento item, ClienteFila cliente) async {
     log('lista mesa ${item.mesa}');
 
+    Mesa mesaOcupada = Mesa.builder(cliente.index, cliente.idpessoa);
+
     // poe o cliente no fim
-    item.mesa.add(Mesa.builder(cliente.index, cliente.idpessoa));
+    item.mesa.add(mesaOcupada);
 
     // monta a lista de mesas em json
     return await _atualizaMesa(item);
