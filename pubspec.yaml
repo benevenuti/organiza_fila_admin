@@ -35,13 +35,15 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "lib/assets/img/logo.png"
+  image_path: "lib/assets/img/icon.png"
 
 flutter:
   uses-material-design: true
   assets:
+    - icon.png
     - logo.png
-    - splash.png
+    - splash_sem_logo.png
+    - splash_com_logo.png
 
   # fonts:
   #   - family: Schyler

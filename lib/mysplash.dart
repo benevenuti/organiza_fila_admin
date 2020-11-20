@@ -57,23 +57,27 @@ class _MySplashState extends State<MySplash> {
       fb = await initializeFlutterFire();
     }
 
-    return Future.value(EstabelecimentoList(fb));
+    return Future.delayed(
+        Duration(seconds: 2), () => Future.value(EstabelecimentoList(fb)));
+    //return Future.value(EstabelecimentoList(fb));
   }
 
   @override
   Widget build(BuildContext context) {
     return SplashScreen(
-      //seconds: 5,
+      //seconds: 3,
       navigateAfterFuture: loadFromFuture(),
       // title: new Text(
       //   'Aplicativo Administrativo',
       //   style: new TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
       // ),
-      image: Image.asset('logo.png'),
+      image: Image.asset(
+        'logo.png',
+      ),
       backgroundColor: Colors.black,
-      imageBackground: AssetImage('splash.png'),
+      imageBackground: AssetImage('splash_sem_logo.png'),
       // styleTextUnderTheLoader: new TextStyle(),
-      //photoSize: 100.0,
+      photoSize: 100.0,
       onClick: () => log('clica clica clica no loading que vai mais rapido'),
       loaderColor: Colors.white,
       loadingText: Text(_msg),
