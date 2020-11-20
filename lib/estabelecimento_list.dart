@@ -150,8 +150,9 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
         item.pessoasNaFila < 1) {
       _showSnackBar(context, 'O estabelecimento não tem clientes na fila.');
     } else if (item.pessoasNaFila != null || item.pessoasNaFila > 0) {
-      ClienteFila cliente = item.fila[0];
-      log('o próximo da fila é o cliente ${cliente.idpessoa}');
+      ClienteFila cliente =
+          item.fila != null && item.fila.length > 0 ? item.fila[0] : null;
+      log('o próximo da fila é o cliente ${cliente != null ? cliente.idpessoa : null}');
 
       var confirmacao = await showDialog<bool>(
         context: context,
@@ -206,13 +207,16 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
           } else if (mesasOcupadas == 0) {
             _showSnackBar(context, 'Não há mesas ocupadas.');
           } else if (mesasOcupadas > 0) {
-            ClienteFila cliente = item.fila[0];
-            log('o próximo da fila é o cliente ${cliente.idpessoa}');
+            ClienteFila cliente = item.fila != null && item.fila.length > 0
+                ? item.fila[0]
+                : null;
+            log('o próximo da fila é o cliente ${cliente != null ? cliente
+                .idpessoa : null}');
 
             String text = '';
             if (cliente != null) {
               text +=
-                  'É possível liberar uma mesa e, também, chamar o próximo cliente.';
+              'É possível liberar uma mesa e, também, chamar o próximo cliente.';
             }
 
             var confirmacao = await showDialog<int>(
