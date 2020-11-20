@@ -712,13 +712,6 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
       log('a Força não foi afetada');
     } else {
       try {
-        if (item.isNew) {
-          // para melhor compreensão useu push() e set() para novos registros
-          await _empresasRef.push().set(item.toMapPush());
-        } else {
-          // e para update, usei child(key) com update()
-          await _empresasRef.child(item.key).update(item.toMapPush());
-        }
         // independentemente controla a imagem pr, se trocou
         if (item.imagemprLocal != null) {
           await _uploadFile(item.imagemprLocal, item.imagempr);
@@ -726,6 +719,14 @@ class _EstabelecimentoCrudState extends State<EstabelecimentoCrud> {
         // independentemente controla a imagem bg, se trocou
         if (item.imagembgLocal != null) {
           await _uploadFile(item.imagembgLocal, item.imagembg);
+        }
+
+        if (item.isNew) {
+          // para melhor compreensão useu push() e set() para novos registros
+          await _empresasRef.push().set(item.toMapPush());
+        } else {
+          // e para update, usei child(key) com update()
+          await _empresasRef.child(item.key).update(item.toMapPush());
         }
         log('Estabelecimento salvo.');
       } on Exception catch (e) {
