@@ -406,16 +406,12 @@ class _EstabelecimentoListState extends State<EstabelecimentoList> {
     );
   }
 
-  void _deleteEstabelecimento(Estabelecimento item) {
-    _empresasRef.orderByChild('id').equalTo(item.id).once().then((value) {
-      (value.value as Map<dynamic, dynamic>).forEach((key, value) {
-        _empresasRef
-            .child('$key')
-            .remove()
-            .then((value) => log('remove estab retornou ok'))
-            .catchError((error) => log('remove estab retornou $error'));
-      });
-    });
+  void _deleteEstabelecimento(Estabelecimento item) async {
+    await _empresasRef
+        .child(item.key)
+        .remove()
+        .then((value) => log('remove estab retornou ok'))
+        .catchError((error) => log('remove estab retornou $error'));
   }
 
   void _showSnackBar(BuildContext context, String text) {
